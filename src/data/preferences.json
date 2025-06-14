@@ -1,0 +1,33 @@
+{
+  "genres": [
+    "lofi",
+    "ambient",
+    "hiphop",
+    "synthwave",
+    "pop",
+    "rock",
+    "jazz",
+    "classical",
+    "country",
+    "electronic",
+    "reggae",
+    "blues",
+    "metal",
+    "folk",
+    "funk"
+  ],
+  "moods": [
+    "calm",
+    "energetic",
+    "relaxed",
+    "nostalgic",
+    "happy",
+    "sad",
+    "romantic",
+    "angry",
+    "peaceful",
+    "uplifting",
+    "dark",
+    "playful"
+  ]
+}

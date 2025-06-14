@@ -23,10 +23,16 @@ export async function getSpotifyAccessToken(
 
 export async function fetchSpotifyTracks(
   accessToken: string,
-  genre: string
+  query: string
 ): Promise<any[]> {
+  const queryParams = new URLSearchParams({
+    q: query,
+    type: "track",
+    limit: "20",
+  });
+
   const response = await fetch(
-    `${SPOTIFY_API_BASE_URL}/search?q=${genre}&type=track&limit=20`,
+    `${SPOTIFY_API_BASE_URL}/search?${queryParams.toString()}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,

@@ -7,13 +7,12 @@ type TrackMetadata = {
   artist: string;
   genre: string;
   mood?: string;
-  tempo?: number;
 };
 
 type UserPreferences = {
   preferredGenres: string[];
   mood?: string;
-  tempoRange?: [number, number];
+  currentTrack?: string;
 };
 
 type Recommendation = {
@@ -21,53 +20,27 @@ type Recommendation = {
   score: number;
 };
 
-const mockTrackDatabase: TrackMetadata[] = [
-  {
-    id: "1",
-    title: "Chill Vibes",
-    artist: "LoFi Guy",
-    genre: "lofi",
-    mood: "calm",
-    tempo: 80,
-  },
-  {
-    id: "2",
-    title: "Hype Beat",
-    artist: "Upwave",
-    genre: "hiphop",
-    mood: "energetic",
-    tempo: 120,
-  },
-  {
-    id: "3",
-    title: "Night Rain",
-    artist: "AmbientClouds",
-    genre: "ambient",
-    mood: "relaxed",
-    tempo: 60,
-  },
-  {
-    id: "4",
-    title: "Retro Synth",
-    artist: "SynthFlash",
-    genre: "synthwave",
-    mood: "nostalgic",
-    tempo: 100,
-  },
-];
-
 function scoreTrack(track: TrackMetadata, prefs: UserPreferences): number {
   let score = 0;
-  if (prefs.preferredGenres?.includes(track.genre)) score += 3;
-  if (prefs.mood && track.mood === prefs.mood) score += 2;
-  if (
-    prefs.tempoRange &&
-    track.tempo &&
-    track.tempo >= prefs.tempoRange[0] &&
-    track.tempo <= prefs.tempoRange[1]
-  ) {
-    score += 1;
+
+  // Score based on preferred genres
+  if (prefs.preferredGenres?.includes(track.genre)) {
+    score += 3;
   }
+
+  // Score based on mood
+  if (prefs.mood && track.mood === prefs.mood) {
+    score += 2;
+  }
+
+  // Score based on current track similarity (e.g., title similarity)
+  if (
+    prefs.currentTrack &&
+    track.title.toLowerCase().includes(prefs.currentTrack.toLowerCase())
+  ) {
+    score += 5; // Higher weight for matching current track
+  }
+
   return score;
 }
 
@@ -87,10 +60,18 @@ export async function POST(req: Request) {
 
   try {
     const accessToken = await getSpotifyAccessToken(clientId, clientSecret);
-    const tracks = await fetchSpotifyTracks(
-      accessToken,
-      preferences.preferredGenres[0]
-    );
+
+    let tracks = [];
+    if (preferences.currentTrack) {
+      // Fetch tracks related to the current listening track
+      tracks = await fetchSpotifyTracks(accessToken, preferences.currentTrack);
+    } else {
+      // Fetch tracks based on the preferred genre
+      tracks = await fetchSpotifyTracks(
+        accessToken,
+        preferences.preferredGenres[0]
+      );
+    }
 
     const recommendations = tracks.map((track) => {
       const trackMetadata: TrackMetadata = {
@@ -99,7 +80,6 @@ export async function POST(req: Request) {
         artist: track.artists[0]?.name || "Unknown Artist",
         genre: preferences.preferredGenres[0],
         mood: preferences.mood || "unknown",
-        tempo: track.tempo || undefined,
       };
 
       const score = scoreTrack(trackMetadata, preferences);

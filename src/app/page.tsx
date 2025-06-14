@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import preferences from "@/data/preferences.json"; // Import the JSON file
 
 export default function Home() {
   const [recommendations, setRecommendations] = useState([]);
   const [preferredGenre, setPreferredGenre] = useState<string | undefined>();
   const [mood, setMood] = useState<string | undefined>();
-  const [tempoRange, setTempoRange] = useState<[number, number] | undefined>();
+  const [currentTrack, setCurrentTrack] = useState<string | undefined>();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const genresOptions = ["lofi", "ambient", "hiphop", "synthwave"];
-  const moodOptions = ["calm", "energetic", "relaxed", "nostalgic"];
 
   const getRecommendations = async () => {
     if (!preferredGenre) {
@@ -28,7 +26,7 @@ export default function Home() {
           preferences: {
             preferredGenres: [preferredGenre],
             mood: mood || undefined,
-            tempoRange: tempoRange || undefined,
+            currentTrack: currentTrack || undefined,
           },
         }),
       });
@@ -55,6 +53,17 @@ export default function Home() {
         </h2>
         <div className="mb-4">
           <label className="block text-md font-medium text-gray-900">
+            Current Listening Track
+          </label>
+          <input
+            type="text"
+            placeholder="Enter track name"
+            className="mt-1 block w-full p-2 border border-gray-300 rounded bg-white text-gray-900"
+            onChange={(e) => setCurrentTrack(e.target.value || undefined)}
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-md font-medium text-gray-900">
             Preferred Genre
           </label>
           <select
@@ -62,7 +71,7 @@ export default function Home() {
             onChange={(e) => setPreferredGenre(e.target.value || undefined)}
           >
             <option value="">Select a genre</option>
-            {genresOptions.map((genre) => (
+            {preferences.genres.map((genre) => (
               <option key={genre} value={genre}>
                 {genre}
               </option>
@@ -78,37 +87,12 @@ export default function Home() {
             onChange={(e) => setMood(e.target.value || undefined)}
           >
             <option value="">Select a mood</option>
-            {moodOptions.map((mood) => (
+            {preferences.moods.map((mood) => (
               <option key={mood} value={mood}>
                 {mood}
               </option>
             ))}
           </select>
-        </div>
-        <div className="mb-4">
-          <label className="block text-md font-medium text-gray-900">
-            Tempo Range
-          </label>
-          <div className="flex space-x-2">
-            <input
-              type="number"
-              placeholder="Min Tempo"
-              className="mt-1 block w-full p-2 border border-gray-300 rounded text-gray-900"
-              onChange={(e) => {
-                const minTempo = parseInt(e.target.value, 10);
-                setTempoRange((prev) => [minTempo, prev?.[1] || 0]);
-              }}
-            />
-            <input
-              type="number"
-              placeholder="Max Tempo"
-              className="mt-1 block w-full p-2 border border-gray-300 rounded text-gray-900"
-              onChange={(e) => {
-                const maxTempo = parseInt(e.target.value, 10);
-                setTempoRange((prev) => [prev?.[0] || 0, maxTempo]);
-              }}
-            />
-          </div>
         </div>
         {errorMessage && (
           <div className="text-red-600 text-sm mb-4">{errorMessage}</div>
@@ -137,9 +121,6 @@ export default function Home() {
             </div>
             <div className="text-md text-gray-600">
               Mood: {rec.track?.mood || "Unknown Mood"}
-            </div>
-            <div className="text-md text-gray-600">
-              Tempo: {rec.track?.tempo || "Unknown Tempo"} BPM
             </div>
             <div className="text-md font-semibold text-blue-700">
               Score: {rec.score || 0}
