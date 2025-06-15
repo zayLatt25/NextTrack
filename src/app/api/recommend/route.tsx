@@ -94,7 +94,25 @@ export async function POST(req: Request) {
       })
     );
 
-    return NextResponse.json({ recommendations }, { status: 200 });
+    // Remove duplicates based on song name, artist, and genre
+    const uniqueRecommendations = recommendations.filter(
+      (rec, index, self) =>
+        index ===
+        self.findIndex(
+          (r) =>
+            r.track.title === rec.track.title &&
+            r.track.artist === rec.track.artist &&
+            r.track.genre === rec.track.genre
+        )
+    );
+
+    // Sort recommendations by score in descending order
+    uniqueRecommendations.sort((a, b) => b.score - a.score);
+
+    return NextResponse.json(
+      { recommendations: uniqueRecommendations },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error fetching Spotify data:", error);
     return NextResponse.json(
