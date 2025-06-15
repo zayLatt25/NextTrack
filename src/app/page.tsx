@@ -162,10 +162,17 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         {recommendations.map((rec: any) => (
           <div
-            key={rec.track?.id || Math.random()}
+            key={rec.track?.id || Math.random()} // Use a fallback key if `rec.track.id` is undefined
             className="p-6 bg-gray-50 rounded shadow-lg flex flex-col space-y-3"
           >
-            <div className="text-xl font-bold text-gray-800">
+            <div
+              className="text-xl font-bold text-gray-800 truncate"
+              style={{
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+                textOverflow: "ellipsis",
+              }}
+            >
               {rec.track?.title || "Unknown Title"}
             </div>
             <div className="text-md text-gray-600">
