@@ -47,3 +47,48 @@ export async function fetchSpotifyTracks(
   const data = await response.json();
   return data.tracks.items;
 }
+
+export async function fetchArtistMetadata(
+  accessToken: string,
+  artistId: string
+): Promise<any> {
+  const response = await fetch(`${SPOTIFY_API_BASE_URL}/artists/${artistId}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    console.error("Failed to fetch artist metadata:", response.statusText);
+    return null;
+  }
+
+  const data = await response.json();
+  return data; // Return artist metadata, including genres
+}
+
+export async function fetchAudioFeatures(
+  accessToken: string,
+  trackId: string
+): Promise<any> {
+  console.log("Fetching audio features for track ID:", trackId);
+
+  const response = await fetch(
+    `${SPOTIFY_API_BASE_URL}/audio-features/${trackId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    console.error("Failed to fetch audio features:", response.statusText);
+    console.error("Response status:", response.status);
+    console.error("Response body:", await response.text());
+    return null;
+  }
+
+  const data = await response.json();
+  return data; // Return audio features, including valence and energy
+}

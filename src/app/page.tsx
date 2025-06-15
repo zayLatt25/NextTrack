@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import preferences from "@/data/preferences.json"; // Import the JSON file
+import preferences from "@/data/preferences.json";
 
 export default function Home() {
   const [recommendations, setRecommendations] = useState([]);
@@ -16,7 +16,8 @@ export default function Home() {
       return;
     }
 
-    setErrorMessage(null); // Clear any previous error messages
+    setErrorMessage(null);
+    setRecommendations([]);
 
     try {
       const res = await fetch("/api/recommend", {
@@ -118,9 +119,6 @@ export default function Home() {
             </div>
             <div className="text-md text-gray-600">
               Genre: {rec.track?.genre || "Unknown Genre"}
-            </div>
-            <div className="text-md text-gray-600">
-              Mood: {rec.track?.mood || "Unknown Mood"}
             </div>
             <div className="text-md font-semibold text-blue-700">
               Score: {rec.score || 0}

@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
-import { getSpotifyAccessToken, fetchSpotifyTracks } from "@/utils/spotify";
+import {
+  getSpotifyAccessToken,
+  fetchSpotifyTracks,
+  fetchArtistMetadata,
+} from "@/utils/spotify";
 
 type TrackMetadata = {
   id: string;
   title: string;
   artist: string;
   genre: string;
-  mood?: string;
 };
 
 type UserPreferences = {
@@ -28,17 +31,12 @@ function scoreTrack(track: TrackMetadata, prefs: UserPreferences): number {
     score += 3;
   }
 
-  // Score based on mood
-  if (prefs.mood && track.mood === prefs.mood) {
-    score += 2;
-  }
-
   // Score based on current track similarity (e.g., title similarity)
   if (
     prefs.currentTrack &&
     track.title.toLowerCase().includes(prefs.currentTrack.toLowerCase())
   ) {
-    score += 5; // Higher weight for matching current track
+    score += 5;
   }
 
   return score;
@@ -73,22 +71,28 @@ export async function POST(req: Request) {
       );
     }
 
-    const recommendations = tracks.map((track) => {
-      const trackMetadata: TrackMetadata = {
-        id: track.id,
-        title: track.name,
-        artist: track.artists[0]?.name || "Unknown Artist",
-        genre: preferences.preferredGenres[0],
-        mood: preferences.mood || "unknown",
-      };
+    const recommendations = await Promise.all(
+      tracks.map(async (track) => {
+        const artistMetadata = await fetchArtistMetadata(
+          accessToken,
+          track.artists[0]?.id
+        );
 
-      const score = scoreTrack(trackMetadata, preferences);
+        const trackMetadata: TrackMetadata = {
+          id: track.id,
+          title: track.name,
+          artist: track.artists[0]?.name || "Unknown Artist",
+          genre: artistMetadata?.genres?.[0] || "Unknown Genre", // Fetch genre from artist metadata
+        };
 
-      return {
-        track: trackMetadata,
-        score,
-      };
-    });
+        const score = scoreTrack(trackMetadata, preferences);
+
+        return {
+          track: trackMetadata,
+          score,
+        };
+      })
+    );
 
     return NextResponse.json({ recommendations }, { status: 200 });
   } catch (error) {
