@@ -3,27 +3,19 @@ import {
   getSpotifyAccessToken,
   fetchSpotifyTracks,
   fetchArtistMetadata,
-  fetchAudioFeatures,
 } from "@/utils/spotify";
 
-type AudioFeatures = {
-  valence: number; // 0.0 to 1.0 - musical positivity
-  energy: number; // 0.0 to 1.0 - intensity and power
-  danceability: number; // 0.0 to 1.0 - how suitable for dancing
-  acousticness: number; // 0.0 to 1.0 - acoustic vs electronic
-  instrumentalness: number; // 0.0 to 1.0 - instrumental vs vocal
-  liveness: number; // 0.0 to 1.0 - live performance vs studio
-  speechiness: number; // 0.0 to 1.0 - spoken words vs music
-  tempo: number; // BPM
-  loudness: number; // dB
-};
+// Audio features removed due to Spotify API deprecation
+// Focus on metadata-based recommendations instead
 
 type TrackMetadata = {
   id: string;
   title: string;
   artist: string;
   genre: string;
-  audioFeatures?: AudioFeatures;
+  popularity?: number;
+  releaseYear?: number;
+  album?: string;
 };
 
 type UserPreferences = {
@@ -43,42 +35,35 @@ type RecommendationRequest = {
 
 type SequencePattern = {
   genreTransitions: Record<string, number>;
-  tempoProgression: number[];
-  moodFlow: number[];
+  artistTransitions: Record<string, number>;
+  popularityTrend: number[];
+  releaseYearTrend: number[];
   artistDiversity: number;
 };
 
 
-// Mood to audio features mapping
-function getMoodAudioFeatures(mood: string): Partial<AudioFeatures> {
-  const moodMappings: Record<string, Partial<AudioFeatures>> = {
+// Mood to metadata preferences mapping
+function getMoodPreferences(mood: string): { preferredGenres: string[], popularityRange: [number, number] } {
+  const moodMappings: Record<string, { preferredGenres: string[], popularityRange: [number, number] }> = {
     happy: {
-      valence: 0.8, // High positivity
-      energy: 0.7, // Moderate to high energy
-      danceability: 0.8, // Very danceable
-      acousticness: 0.3, // More electronic
+      preferredGenres: ['pop', 'dance', 'electronic', 'indie-pop'],
+      popularityRange: [60, 100] // Higher popularity for mainstream feel
     },
     sad: {
-      valence: 0.2, // Low positivity
-      energy: 0.3, // Low energy
-      danceability: 0.3, // Less danceable
-      acousticness: 0.7, // More acoustic
+      preferredGenres: ['indie', 'folk', 'acoustic', 'alternative'],
+      popularityRange: [20, 80] // Mix of popular and niche
     },
     energetic: {
-      valence: 0.6, // Moderate positivity
-      energy: 0.9, // Very high energy
-      danceability: 0.8, // Very danceable
-      acousticness: 0.2, // More electronic
+      preferredGenres: ['rock', 'electronic', 'dance', 'hip-hop', 'metal'],
+      popularityRange: [40, 100] // Wide range, focus on energetic genres
     },
     calm: {
-      valence: 0.5, // Neutral positivity
-      energy: 0.2, // Low energy
-      danceability: 0.4, // Less danceable
-      acousticness: 0.8, // Very acoustic
+      preferredGenres: ['ambient', 'classical', 'jazz', 'acoustic', 'chill'],
+      popularityRange: [10, 70] // Lower popularity, more niche genres
     },
   };
 
-  return moodMappings[mood.toLowerCase()] || {};
+  return moodMappings[mood.toLowerCase()] || { preferredGenres: [], popularityRange: [0, 100] };
 }
 
 // Calculate title similarity using Levenshtein distance
@@ -118,34 +103,34 @@ function calculateTitleSimilarity(title1: string, title2: string): number {
   return 1 - (matrix[s2.length][s1.length] / maxLength);
 }
 
-// Calculate audio features similarity using cosine similarity
-function calculateAudioFeaturesSimilarity(
-  trackFeatures: AudioFeatures,
-  moodFeatures: Partial<AudioFeatures>
+// Calculate metadata similarity for mood matching
+function calculateMoodSimilarity(
+  track: TrackMetadata,
+  moodPreferences: { preferredGenres: string[], popularityRange: [number, number] }
 ): number {
-  const featuresToCompare: (keyof AudioFeatures)[] = [
-    'valence',
-    'energy',
-    'danceability',
-    'acousticness',
-  ];
-
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-
-  for (const feature of featuresToCompare) {
-    if (moodFeatures[feature] !== undefined) {
-      const a = trackFeatures[feature];
-      const b = moodFeatures[feature] as number;
-      dotProduct += a * b;
-      normA += a * a;
-      normB += b * b;
+  let similarity = 0;
+  
+  // Genre match (weight 0.6)
+  if (moodPreferences.preferredGenres.includes(track.genre)) {
+    similarity += 0.6;
+  }
+  
+  // Popularity match (weight 0.4)
+  if (track.popularity !== undefined) {
+    const [minPop, maxPop] = moodPreferences.popularityRange;
+    if (track.popularity >= minPop && track.popularity <= maxPop) {
+      similarity += 0.4;
+    } else {
+      // Partial credit for close matches
+      const distance = Math.min(
+        Math.abs(track.popularity - minPop),
+        Math.abs(track.popularity - maxPop)
+      );
+      similarity += Math.max(0, 0.4 - (distance / 50));
     }
   }
-
-  if (normA === 0 || normB === 0) return 0;
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  
+  return similarity;
 }
 
 // Sequence analysis functions
@@ -162,16 +147,29 @@ function calculateGenreTransitions(tracks: TrackMetadata[]): Record<string, numb
   return transitions;
 }
 
-function calculateTempoProgression(tracks: TrackMetadata[]): number[] {
-  return tracks
-    .map(track => track.audioFeatures?.tempo || 120)
-    .filter((tempo, index, arr) => index === 0 || Math.abs(tempo - arr[index - 1]) > 5);
+function calculateArtistTransitions(tracks: TrackMetadata[]): Record<string, number> {
+  const transitions: Record<string, number> = {};
+  
+  for (let i = 0; i < tracks.length - 1; i++) {
+    const currentArtist = tracks[i].artist;
+    const nextArtist = tracks[i + 1].artist;
+    const transition = `${currentArtist}->${nextArtist}`;
+    transitions[transition] = (transitions[transition] || 0) + 1;
+  }
+  
+  return transitions;
 }
 
-function calculateMoodFlow(tracks: TrackMetadata[]): number[] {
+function calculatePopularityTrend(tracks: TrackMetadata[]): number[] {
   return tracks
-    .map(track => track.audioFeatures?.valence || 0.5)
-    .filter((valence, index, arr) => index === 0 || Math.abs(valence - arr[index - 1]) > 0.1);
+    .map(track => track.popularity || 50)
+    .filter((popularity, index, arr) => index === 0 || Math.abs(popularity - arr[index - 1]) > 10);
+}
+
+function calculateReleaseYearTrend(tracks: TrackMetadata[]): number[] {
+  return tracks
+    .map(track => track.releaseYear || new Date().getFullYear())
+    .filter((year, index, arr) => index === 0 || Math.abs(year - arr[index - 1]) > 2);
 }
 
 function calculateArtistDiversity(tracks: TrackMetadata[]): number {
@@ -187,51 +185,46 @@ function predictNextGenre(transitions: Record<string, number>, currentGenre: str
   return possibleTransitions[0]?.split('->')[1] || currentGenre;
 }
 
-function isGoodTempoTransition(
-  currentTempo: number | undefined, 
-  nextTempo: number | undefined, 
-  progression: number[]
+function isGoodPopularityTransition(
+  currentPopularity: number | undefined, 
+  nextPopularity: number | undefined, 
+  trend: number[]
 ): boolean {
-  if (!currentTempo || !nextTempo) return true;
+  if (!currentPopularity || !nextPopularity) return true;
   
-  const avgProgression = progression.length > 1 
-    ? progression.slice(-3).reduce((a, b) => a + b, 0) / Math.min(3, progression.length)
-    : currentTempo;
+  if (trend.length < 2) return true;
   
-  const tempoDiff = Math.abs(nextTempo - currentTempo);
-  const expectedDiff = Math.abs(currentTempo - avgProgression);
+  const recentTrend = trend.slice(-3).reduce((sum, pop, index, arr) => {
+    if (index === 0) return 0;
+    return sum + (pop - arr[index - 1]);
+  }, 0) / Math.max(1, trend.length - 1);
   
-  return tempoDiff <= expectedDiff * 1.5; // Allow some variation
+  const popularityChange = nextPopularity - currentPopularity;
+  
+  // Allow transitions that follow the trend
+  return Math.abs(popularityChange - recentTrend) < 20;
 }
 
-function isGoodMoodTransition(
-  currentFeatures: AudioFeatures | undefined,
-  nextFeatures: AudioFeatures | undefined,
-  moodFlow: number[]
+function isGoodArtistTransition(
+  currentArtist: string,
+  nextArtist: string,
+  artistTransitions: Record<string, number>
 ): boolean {
-  if (!currentFeatures || !nextFeatures) return true;
+  const transition = `${currentArtist}->${nextArtist}`;
+  const reverseTransition = `${nextArtist}->${currentArtist}`;
   
-  const currentValence = currentFeatures.valence;
-  const nextValence = nextFeatures.valence;
-  
-  if (moodFlow.length < 2) return true;
-  
-  const recentMoodTrend = moodFlow.slice(-3).reduce((sum, valence, index, arr) => {
-    if (index === 0) return 0;
-    return sum + (valence - arr[index - 1]);
-  }, 0) / Math.max(1, moodFlow.length - 1);
-  
-  const valenceChange = nextValence - currentValence;
-  
-  // If mood is trending up, allow positive changes; if trending down, allow negative changes
-  return Math.abs(valenceChange - recentMoodTrend) < 0.3;
+  // Check if this transition has happened before
+  return (artistTransitions[transition] || 0) > 0 || 
+         (artistTransitions[reverseTransition] || 0) > 0 ||
+         currentArtist === nextArtist; // Same artist is always good
 }
 
 function analyzeListeningSequence(tracks: TrackMetadata[]): SequencePattern {
   return {
     genreTransitions: calculateGenreTransitions(tracks),
-    tempoProgression: calculateTempoProgression(tracks),
-    moodFlow: calculateMoodFlow(tracks),
+    artistTransitions: calculateArtistTransitions(tracks),
+    popularityTrend: calculatePopularityTrend(tracks),
+    releaseYearTrend: calculateReleaseYearTrend(tracks),
     artistDiversity: calculateArtistDiversity(tracks)
   };
 }
@@ -255,13 +248,13 @@ function scoreTrackForSequence(
   const predictedGenre = predictNextGenre(sequencePattern.genreTransitions, lastTrack.genre);
   if (track.genre === predictedGenre) score += 4;
   
-  // 2. Tempo progression (weight 3)
-  if (isGoodTempoTransition(lastTrack.audioFeatures?.tempo, track.audioFeatures?.tempo, sequencePattern.tempoProgression)) {
+  // 2. Popularity progression (weight 3)
+  if (isGoodPopularityTransition(lastTrack.popularity, track.popularity, sequencePattern.popularityTrend)) {
     score += 3;
   }
   
-  // 3. Mood flow (weight 3)
-  if (isGoodMoodTransition(lastTrack.audioFeatures, track.audioFeatures, sequencePattern.moodFlow)) {
+  // 3. Artist transition (weight 3)
+  if (isGoodArtistTransition(lastTrack.artist, track.artist, sequencePattern.artistTransitions)) {
     score += 3;
   }
   
@@ -290,11 +283,16 @@ function scoreTrack(track: TrackMetadata, prefs: UserPreferences): number {
     score += titleSimilarity * 2;
   }
 
-  // 3. Mood mapping to audio features scoring (weight 4)
-  if (prefs.mood && track.audioFeatures) {
-    const moodFeatures = getMoodAudioFeatures(prefs.mood);
-    const audioSimilarity = calculateAudioFeaturesSimilarity(track.audioFeatures, moodFeatures);
-    score += audioSimilarity * 4;
+  // 3. Mood-based metadata scoring (weight 4)
+  if (prefs.mood) {
+    const moodPreferences = getMoodPreferences(prefs.mood);
+    const moodSimilarity = calculateMoodSimilarity(track, moodPreferences);
+    score += moodSimilarity * 4;
+  }
+
+  // 4. Popularity bonus (weight 1)
+  if (track.popularity && track.popularity > 70) {
+    score += 1;
   }
 
   return score;
@@ -342,27 +340,16 @@ export async function POST(req: Request) {
       try {
         const track = await fetchSpotifyTracks(accessToken, `track:${trackId}`);
         if (track.length > 0) {
-          const [artistMetadata, audioFeatures] = await Promise.all([
-            fetchArtistMetadata(accessToken, track[0].artists[0]?.id),
-            fetchAudioFeatures(accessToken, track[0].id).catch(() => null),
-          ]);
+          const artistMetadata = await fetchArtistMetadata(accessToken, track[0].artists[0]?.id);
 
           historyTracks.push({
             id: track[0].id,
             title: track[0].name,
             artist: track[0].artists[0]?.name || "Unknown Artist",
             genre: artistMetadata?.genres?.[0] || "Unknown Genre",
-            audioFeatures: audioFeatures ? {
-              valence: audioFeatures.valence,
-              energy: audioFeatures.energy,
-              danceability: audioFeatures.danceability,
-              acousticness: audioFeatures.acousticness,
-              instrumentalness: audioFeatures.instrumentalness,
-              liveness: audioFeatures.liveness,
-              speechiness: audioFeatures.speechiness,
-              tempo: audioFeatures.tempo,
-              loudness: audioFeatures.loudness,
-            } : undefined,
+            popularity: track[0].popularity,
+            releaseYear: track[0].album?.release_date ? new Date(track[0].album.release_date).getFullYear() : undefined,
+            album: track[0].album?.name,
           });
         }
       } catch (error) {
@@ -386,30 +373,16 @@ export async function POST(req: Request) {
     const recommendations = await Promise.all(
       tracks.map(async (track) => {
         try {
-          const [artistMetadata, audioFeatures] = await Promise.all([
-            fetchArtistMetadata(accessToken, track.artists[0]?.id),
-            fetchAudioFeatures(accessToken, track.id).catch((error) => {
-              console.warn(`Audio features unavailable for ${track.name}: ${error.message}`);
-              return null; // Gracefully handle audio features API failures
-            }),
-          ]);
+          const artistMetadata = await fetchArtistMetadata(accessToken, track.artists[0]?.id);
 
           const trackMetadata: TrackMetadata = {
             id: track.id,
             title: track.name,
             artist: track.artists[0]?.name || "Unknown Artist",
-            genre: artistMetadata?.genres?.[0] || "Unknown Genre", // Fetch genre from artist metadata
-            audioFeatures: audioFeatures ? {
-              valence: audioFeatures.valence,
-              energy: audioFeatures.energy,
-              danceability: audioFeatures.danceability,
-              acousticness: audioFeatures.acousticness,
-              instrumentalness: audioFeatures.instrumentalness,
-              liveness: audioFeatures.liveness,
-              speechiness: audioFeatures.speechiness,
-              tempo: audioFeatures.tempo,
-              loudness: audioFeatures.loudness,
-            } : undefined,
+            genre: artistMetadata?.genres?.[0] || "Unknown Genre",
+            popularity: track.popularity,
+            releaseYear: track.album?.release_date ? new Date(track.album.release_date).getFullYear() : undefined,
+            album: track.album?.name,
           };
 
           const score = scoreTrackForSequence(trackMetadata, historyTracks, preferences);
@@ -426,7 +399,9 @@ export async function POST(req: Request) {
             title: track.name,
             artist: track.artists[0]?.name || "Unknown Artist",
             genre: "Unknown Genre",
-            audioFeatures: undefined,
+            popularity: track.popularity,
+            releaseYear: track.album?.release_date ? new Date(track.album.release_date).getFullYear() : undefined,
+            album: track.album?.name,
           };
 
           const score = scoreTrackForSequence(trackMetadata, historyTracks, preferences);
@@ -460,8 +435,8 @@ export async function POST(req: Request) {
     // Calculate evaluation metrics
     const evaluationMetrics = {
       genreCoherence: calculateGenreCoherence(uniqueRecommendations),
-      tempoSmoothness: calculateTempoSmoothness(uniqueRecommendations),
-      moodConsistency: calculateMoodConsistency(uniqueRecommendations)
+      popularitySmoothness: calculatePopularitySmoothness(uniqueRecommendations),
+      genreConsistency: calculateGenreConsistency(uniqueRecommendations)
     };
 
     return NextResponse.json(
@@ -492,37 +467,32 @@ function calculateGenreCoherence(recommendations: { track: TrackMetadata }[]): n
   return uniqueGenres.size / genres.length;
 }
 
-function calculateTempoSmoothness(recommendations: { track: TrackMetadata }[]): number {
+function calculatePopularitySmoothness(recommendations: { track: TrackMetadata }[]): number {
   if (recommendations.length < 2) return 1;
   
-  const tempos = recommendations
-    .map(r => r.track.audioFeatures?.tempo)
-    .filter(t => t !== undefined);
+  const popularities = recommendations
+    .map(r => r.track.popularity)
+    .filter(p => p !== undefined) as number[];
   
-  if (tempos.length < 2) return 1;
+  if (popularities.length < 2) return 1;
   
   let totalVariation = 0;
-  for (let i = 1; i < tempos.length; i++) {
-    totalVariation += Math.abs(tempos[i] - tempos[i - 1]);
+  for (let i = 1; i < popularities.length; i++) {
+    totalVariation += Math.abs(popularities[i] - popularities[i - 1]);
   }
   
-  const avgVariation = totalVariation / (tempos.length - 1);
-  return Math.max(0, 1 - (avgVariation / 50)); // Normalize by typical tempo range
+  const avgVariation = totalVariation / (popularities.length - 1);
+  return Math.max(0, 1 - (avgVariation / 50)); // Normalize by typical popularity range
 }
 
-function calculateMoodConsistency(recommendations: { track: TrackMetadata }[]): number {
+function calculateGenreConsistency(recommendations: { track: TrackMetadata }[]): number {
   if (recommendations.length < 2) return 1;
   
-  const valences = recommendations
-    .map(r => r.track.audioFeatures?.valence)
-    .filter(v => v !== undefined);
+  const genres = recommendations.map(r => r.track.genre);
+  const uniqueGenres = new Set(genres);
   
-  if (valences.length < 2) return 1;
-  
-  const avgValence = valences.reduce((sum, v) => sum + v, 0) / valences.length;
-  const variance = valences.reduce((sum, v) => sum + Math.pow(v - avgValence, 2), 0) / valences.length;
-  
-  return Math.max(0, 1 - variance); // Lower variance = higher consistency
+  // More consistency = fewer unique genres relative to total
+  return uniqueGenres.size / genres.length;
 }
 
 // GET endpoint for evaluation

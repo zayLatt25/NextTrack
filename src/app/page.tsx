@@ -4,24 +4,14 @@ import { useState } from "react";
 import preferences from "@/data/preferences.json";
 
 // TypeScript interfaces for type safety
-interface AudioFeatures {
-  valence: number;
-  energy: number;
-  danceability: number;
-  acousticness: number;
-  instrumentalness: number;
-  liveness: number;
-  speechiness: number;
-  tempo: number;
-  loudness: number;
-}
-
 interface TrackMetadata {
   id: string;
   title: string;
   artist: string;
   genre: string;
-  audioFeatures?: AudioFeatures;
+  popularity?: number;
+  releaseYear?: number;
+  album?: string;
 }
 
 interface Recommendation {
@@ -33,14 +23,15 @@ interface APIResponse {
   recommendations: Recommendation[];
   sequenceAnalysis?: {
     genreTransitions: Record<string, number>;
-    tempoProgression: number[];
-    moodFlow: number[];
+    artistTransitions: Record<string, number>;
+    popularityTrend: number[];
+    releaseYearTrend: number[];
     artistDiversity: number;
   };
   evaluationMetrics?: {
     genreCoherence: number;
-    tempoSmoothness: number;
-    moodConsistency: number;
+    popularitySmoothness: number;
+    genreConsistency: number;
   };
   totalTracksAnalyzed: number;
   searchStrategy: string;
