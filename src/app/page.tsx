@@ -3,11 +3,55 @@
 import { useState } from "react";
 import preferences from "@/data/preferences.json";
 
+// TypeScript interfaces for type safety
+interface AudioFeatures {
+  valence: number;
+  energy: number;
+  danceability: number;
+  acousticness: number;
+  instrumentalness: number;
+  liveness: number;
+  speechiness: number;
+  tempo: number;
+  loudness: number;
+}
+
+interface TrackMetadata {
+  id: string;
+  title: string;
+  artist: string;
+  genre: string;
+  audioFeatures?: AudioFeatures;
+}
+
+interface Recommendation {
+  track: TrackMetadata;
+  score: number;
+}
+
+interface APIResponse {
+  recommendations: Recommendation[];
+  sequenceAnalysis?: {
+    genreTransitions: Record<string, number>;
+    tempoProgression: number[];
+    moodFlow: number[];
+    artistDiversity: number;
+  };
+  evaluationMetrics?: {
+    genreCoherence: number;
+    tempoSmoothness: number;
+    moodConsistency: number;
+  };
+  totalTracksAnalyzed: number;
+  searchStrategy: string;
+}
+
 export default function Home() {
-  const [recommendations, setRecommendations] = useState([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [preferredGenre, setPreferredGenre] = useState<string | undefined>();
   const [mood, setMood] = useState<string | undefined>();
   const [currentTrack, setCurrentTrack] = useState<string | undefined>();
+  const [listeningHistory, setListeningHistory] = useState<string>(""); // New: listening history input
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null); // Track ID for the player
   const [loading, setLoading] = useState<boolean>(false); // Loading state for the button
@@ -23,10 +67,16 @@ export default function Home() {
     setLoading(true); // Set loading state to true
 
     try {
+      // Parse listening history from comma-separated string
+      const historyArray = listeningHistory 
+        ? listeningHistory.split(',').map(id => id.trim()).filter(id => id.length > 0)
+        : [];
+
       const res = await fetch("/api/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          listeningHistory: historyArray,
           preferences: {
             preferredGenres: [preferredGenre],
             mood: mood || undefined,
@@ -36,16 +86,26 @@ export default function Home() {
       });
 
       if (!res.ok) {
-        throw new Error(`Error: ${res.status} - ${res.statusText}`);
+        const errorData = await res.json();
+        throw new Error(errorData.message || `Error: ${res.status} - ${res.statusText}`);
       }
 
-      const data = await res.json();
+      const data = await res.json() as APIResponse;
       setRecommendations(data.recommendations);
+
+      // Log additional data for debugging
+      console.log('API Response:', {
+        searchStrategy: data.searchStrategy,
+        totalTracksAnalyzed: data.totalTracksAnalyzed,
+        evaluationMetrics: data.evaluationMetrics,
+        sequenceAnalysis: data.sequenceAnalysis
+      });
 
       // Clear the selected track ID when new recommendations are fetched
       setSelectedTrackId(null);
     } catch (error) {
       console.error("Failed to fetch recommendations:", error);
+      setErrorMessage(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setLoading(false); // Set loading state to false
     }
@@ -105,6 +165,21 @@ export default function Home() {
               ))}
             </select>
           </div>
+          <div className="mb-4">
+            <label className="block text-md font-medium text-gray-900">
+              Listening History (Track IDs)
+            </label>
+            <input
+              type="text"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded bg-white text-gray-900"
+              placeholder="Enter track IDs separated by commas (e.g., 4iV5W9uYEdYUVa79Axb7Rh, 3n3Ppam7vgaVa1iaRUmn9T)"
+              value={listeningHistory}
+              onChange={(e) => setListeningHistory(e.target.value)}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Optional: Enter Spotify track IDs to get sequence-based recommendations
+            </p>
+          </div>
           {errorMessage && (
             <div className="text-red-600 text-sm mb-4">{errorMessage}</div>
           )}
@@ -160,7 +235,7 @@ export default function Home() {
 
       {/* Recommendations */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        {recommendations.map((rec: any) => (
+        {recommendations.map((rec: Recommendation) => (
           <div
             key={rec.track?.id || Math.random()} // Use a fallback key if `rec.track.id` is undefined
             className="p-6 bg-gray-50 rounded shadow-lg flex flex-col space-y-3"
