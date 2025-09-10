@@ -39,7 +39,7 @@ interface APIResponse {
 
 export default function Home() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [preferredGenre, setPreferredGenre] = useState<string | undefined>();
+  const [preferredGenres, setPreferredGenres] = useState<string[]>([]);
   const [mood, setMood] = useState<string | undefined>();
   const [currentTrack, setCurrentTrack] = useState<string | undefined>();
   const [listeningHistory, setListeningHistory] = useState<string>(""); // New: listening history input
@@ -48,8 +48,8 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(false); // Loading state for the button
 
   const getRecommendations = async () => {
-    if (!preferredGenre) {
-      setErrorMessage("Please select a genre.");
+    if (preferredGenres.length === 0) {
+      setErrorMessage("Please select at least one genre.");
       return;
     }
 
@@ -69,7 +69,7 @@ export default function Home() {
         body: JSON.stringify({
           listeningHistory: historyArray,
           preferences: {
-            preferredGenres: [preferredGenre],
+            preferredGenres: preferredGenres,
             mood: mood || undefined,
             currentTrack: currentTrack || undefined,
           },
@@ -126,19 +126,47 @@ export default function Home() {
           </div>
           <div className="mb-4">
             <label className="block text-md font-medium text-gray-900">
-              Preferred Genre
+              Preferred Genres
             </label>
-            <select
-              className="mt-1 block w-full p-2 border border-gray-300 rounded bg-white text-gray-900"
-              onChange={(e) => setPreferredGenre(e.target.value || undefined)}
-            >
-              <option value="">Select a genre</option>
-              {preferences.genres.map((genre) => (
-                <option key={genre} value={genre}>
-                  {genre}
-                </option>
-              ))}
-            </select>
+            <div className="mt-1">
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border border-gray-300 rounded p-2 bg-white">
+                {preferences.genres.map((genre) => (
+                  <label key={genre} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      value={genre}
+                      checked={preferredGenres.includes(genre)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setPreferredGenres([...preferredGenres, genre]);
+                        } else {
+                          setPreferredGenres(preferredGenres.filter(g => g !== genre));
+                        }
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-900">{genre}</span>
+                  </label>
+                ))}
+              </div>
+              {preferredGenres.length > 0 && (
+                <div className="mt-2 flex items-center justify-between">
+                  <div>
+                    <span className="text-sm text-gray-600">Selected: </span>
+                    <span className="text-sm text-blue-600 font-medium">
+                      {preferredGenres.join(', ')}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPreferredGenres([])}
+                    className="text-xs text-red-600 hover:text-red-800 underline"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           <div className="mb-4">
             <label className="block text-md font-medium text-gray-900">
