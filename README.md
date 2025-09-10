@@ -97,7 +97,14 @@ Get music recommendations based on listening history and preferences.
     "genreConsistency": 0.7
   },
   "totalTracksAnalyzed": 3,
-  "searchStrategy": "sequence-based"
+  "searchStrategy": "sequence-based",
+  "searchQueries": ["pop", "classical", "Artist Name", "Song Title Artist Name"],
+  "totalTracksFound": 79,
+  "debugInfo": {
+    "predictedGenres": ["pop", "classical"],
+    "genreTransitions": {"classical->pop": 1, "pop->rock": 2},
+    "artistDiversity": 0.6
+  }
 }
 ```
 
@@ -133,28 +140,40 @@ Get evaluation metrics and test data for testing the recommendation system.
 
 ## 🧮 Scoring Algorithm
 
-The recommendation system uses a multi-factor scoring approach with the following weights:
+The recommendation system uses a balanced multi-factor scoring approach that prioritizes user preferences while incorporating listening history patterns:
 
-1. **Genre Transition Probability** (Weight: 4)
-   - Analyzes genre transitions in listening history
-   - Predicts most likely next genre based on patterns
-
-2. **Popularity Progression** (Weight: 3)
-   - Ensures smooth popularity transitions
-   - Maintains consistent listening level based on trends
-
-3. **Artist Transition** (Weight: 3)
-   - Tracks artist patterns in listening history
-   - Maintains artist flow consistency
-
-4. **User Preferences** (Weight: 2)
+1. **User Preferences** (Weight: 5) - **Highest Priority**
    - Genre preferences matching
    - Mood-based genre and popularity matching
    - Title similarity scoring
+   - Full weight given to user-specified preferences
 
-5. **Artist Diversity** (Weight: 1)
-   - Encourages variety when needed
-   - Prevents repetitive artist sequences
+2. **Genre Transition Probability** (Weight: 2)
+   - Analyzes genre transitions in listening history
+   - Predicts most likely next genre based on patterns
+   - Considers both direct transitions and overall genre frequency
+
+3. **Popularity Progression** (Weight: 1)
+   - Ensures smooth popularity transitions
+   - Maintains consistent listening level based on trends
+
+4. **Artist Transition** (Weight: 1)
+   - Tracks artist patterns in listening history
+   - Maintains artist flow consistency
+
+5. **Artist Diversity** (Weight: 1-1.5)
+   - Adaptive diversity based on listening patterns
+   - Low diversity: encourages new artists (1.5x bonus)
+   - High diversity: allows artist continuity (0.5x bonus)
+
+6. **Genre Frequency Bonus** (Weight: 1)
+   - Rewards genres that appear frequently in listening history
+   - Helps maintain genre consistency
+
+7. **Perfect Match Bonus** (Weight: 2-3.5)
+   - Extra scoring for tracks matching both user preferences AND history patterns
+   - Genre + history match: +2 points
+   - Mood + history match: +1.5 points
 
 ## 🔍 Sequence Analysis
 
@@ -177,12 +196,16 @@ Built-in quality assessment includes:
 ## 🎵 How It Works
 
 1. **Input Processing**: Validates listening history and preferences
-2. **History Analysis**: Fetches metadata for all tracks in listening history
-3. **Pattern Recognition**: Analyzes genre, artist, and popularity patterns
-4. **Track Discovery**: Searches for similar tracks using Spotify API
-5. **Scoring**: Applies multi-factor scoring algorithm
-6. **Ranking**: Sorts recommendations by calculated scores
-7. **Evaluation**: Calculates quality metrics for assessment
+2. **History Analysis**: Fetches metadata for all tracks in listening history using direct Spotify API calls
+3. **Pattern Recognition**: Analyzes genre, artist, and popularity patterns from listening history
+4. **Multi-Query Search Strategy**: 
+   - **With History**: Creates multiple search queries prioritizing user preferences, then history patterns
+   - **Without History**: Falls back to genre-based search
+   - **Search Queries Include**: User preferred genres, predicted genres, frequent artists, last track, genre transitions
+5. **Track Discovery**: Fetches tracks from multiple Spotify API searches and removes duplicates
+6. **Balanced Scoring**: Applies multi-factor scoring algorithm with user preferences as highest priority
+7. **Ranking**: Sorts recommendations by calculated scores (rounded to 2 decimal places)
+8. **Evaluation**: Calculates quality metrics for assessment
 
 ## 🎨 Mood Support
 
