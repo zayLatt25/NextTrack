@@ -18,6 +18,17 @@ type TrackMetadata = {
   album?: string;
 };
 
+type SpotifyTrack = {
+  id: string;
+  name: string;
+  artists: Array<{ id: string; name: string }>;
+  popularity: number;
+  album: {
+    name: string;
+    release_date: string;
+  };
+};
+
 type UserPreferences = {
   preferredGenres: string[];
   mood?: string;
@@ -177,12 +188,42 @@ function calculateArtistDiversity(tracks: TrackMetadata[]): number {
   return uniqueArtists.size / tracks.length;
 }
 
-function predictNextGenre(transitions: Record<string, number>, currentGenre: string): string {
-  const possibleTransitions = Object.keys(transitions)
+function predictNextGenre(transitions: Record<string, number>, currentGenre: string, allGenres: string[]): string[] {
+  // Get direct transitions from current genre
+  const directTransitions = Object.keys(transitions)
     .filter(t => t.startsWith(`${currentGenre}->`))
     .sort((a, b) => transitions[b] - transitions[a]);
   
-  return possibleTransitions[0]?.split('->')[1] || currentGenre;
+  // Get most common genres in the entire history
+  const genreFrequency: Record<string, number> = {};
+  allGenres.forEach(genre => {
+    genreFrequency[genre] = (genreFrequency[genre] || 0) + 1;
+  });
+  
+  const topGenres = Object.entries(genreFrequency)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 3)
+    .map(([genre]) => genre);
+  
+  // Combine direct transitions with top genres
+  const predictedGenres = new Set<string>();
+  
+  // Add direct transitions (up to 2)
+  directTransitions.slice(0, 2).forEach(transition => {
+    predictedGenres.add(transition.split('->')[1]);
+  });
+  
+  // Add top genres from history
+  topGenres.forEach(genre => {
+    predictedGenres.add(genre);
+  });
+  
+  // Fallback to current genre if no predictions
+  if (predictedGenres.size === 0) {
+    predictedGenres.add(currentGenre);
+  }
+  
+  return Array.from(predictedGenres);
 }
 
 function isGoodPopularityTransition(
@@ -243,30 +284,75 @@ function scoreTrackForSequence(
   
   const lastTrack = listeningHistory[listeningHistory.length - 1];
   const sequencePattern = analyzeListeningSequence(listeningHistory);
+  const allGenres = listeningHistory.map(t => t.genre);
+  const allArtists = listeningHistory.map(t => t.artist);
   
-  // 1. Genre transition probability (weight 4)
-  const predictedGenre = predictNextGenre(sequencePattern.genreTransitions, lastTrack.genre);
-  if (track.genre === predictedGenre) score += 4;
+  // 1. User preference scoring (weight 5) - highest priority
+  const preferenceScore = scoreTrack(track, preferences);
+  score += preferenceScore * 1.0; // Full weight for user preferences
   
-  // 2. Popularity progression (weight 3)
+  // 2. Genre transition probability (weight 2) - reduced to give more weight to preferences
+  const predictedGenres = predictNextGenre(sequencePattern.genreTransitions, lastTrack.genre, allGenres);
+  if (predictedGenres.includes(track.genre)) {
+    score += 2;
+  }
+  
+  // 3. Popularity progression (weight 1) - reduced
   if (isGoodPopularityTransition(lastTrack.popularity, track.popularity, sequencePattern.popularityTrend)) {
-    score += 3;
+    score += 1;
   }
   
-  // 3. Artist transition (weight 3)
+  // 4. Artist transition (weight 1) - reduced
   if (isGoodArtistTransition(lastTrack.artist, track.artist, sequencePattern.artistTransitions)) {
-    score += 3;
+    score += 1;
   }
-  
-  // 4. Original preference scoring (weight 2)
-  score += scoreTrack(track, preferences) * 0.5;
   
   // 5. Artist diversity bonus (weight 1)
-  if (sequencePattern.artistDiversity < 0.3 && track.artist !== lastTrack.artist) {
-    score += 1; // Encourage diversity if current sequence lacks it
+  const artistFrequency = allArtists.reduce((acc, artist) => {
+    acc[artist] = (acc[artist] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  const maxArtistFrequency = Math.max(...Object.values(artistFrequency));
+  const trackArtistFrequency = artistFrequency[track.artist] || 0;
+  
+  if (sequencePattern.artistDiversity < 0.3) {
+    // Low diversity - encourage new artists
+    if (track.artist !== lastTrack.artist && trackArtistFrequency < maxArtistFrequency * 0.3) {
+      score += 1.5; // Higher bonus for new artists
+    }
+  } else if (sequencePattern.artistDiversity > 0.7) {
+    // High diversity - can continue with same artist occasionally
+    if (track.artist === lastTrack.artist) {
+      score += 0.5; // Small bonus for artist continuity
+    }
   }
   
-  return score;
+  // 6. Genre frequency bonus (weight 1) - new
+  const genreFrequency = allGenres.reduce((acc, genre) => {
+    acc[genre] = (acc[genre] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  const maxFrequency = Math.max(...Object.values(genreFrequency));
+  const trackGenreFrequency = genreFrequency[track.genre] || 0;
+  if (trackGenreFrequency >= maxFrequency * 0.5) {
+    score += 1; // Bonus for genres that appear frequently in history
+  }
+  
+  // 7. Perfect match bonus (weight 2) - tracks that match both user preferences AND history patterns
+  const isUserGenreMatch = preferences.preferredGenres?.includes(track.genre) || false;
+  const isHistoryGenreMatch = predictedGenres.includes(track.genre);
+  const isUserMoodMatch = preferences.mood ? calculateMoodSimilarity(track, getMoodPreferences(preferences.mood)) > 0.5 : false;
+  
+  if (isUserGenreMatch && isHistoryGenreMatch) {
+    score += 2; // Bonus for tracks that match both user genre preference and history pattern
+  }
+  if (isUserMoodMatch && isHistoryGenreMatch) {
+    score += 1.5; // Bonus for tracks that match both user mood and history pattern
+  }
+  
+  return Math.round(score * 100) / 100; // Round to 2 decimal places
 }
 
 function scoreTrack(track: TrackMetadata, prefs: UserPreferences): number {
@@ -295,7 +381,7 @@ function scoreTrack(track: TrackMetadata, prefs: UserPreferences): number {
     score += 1;
   }
 
-  return score;
+  return Math.round(score * 100) / 100; // Round to 2 decimal places
 }
 
 export async function POST(req: Request) {
@@ -338,40 +424,132 @@ export async function POST(req: Request) {
     const historyTracks: TrackMetadata[] = [];
     for (const trackId of listeningHistory) {
       try {
-        const track = await fetchSpotifyTracks(accessToken, `track:${trackId}`);
-        if (track.length > 0) {
-          const artistMetadata = await fetchArtistMetadata(accessToken, track[0].artists[0]?.id);
+        // Fetch track directly by ID instead of using search
+        const response = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        
+        if (response.ok) {
+          const track = await response.json();
+          const artistMetadata = await fetchArtistMetadata(accessToken, track.artists[0]?.id);
+          
+          console.log(`Artist metadata for ${track.artists[0]?.name}:`, artistMetadata?.genres);
+          
+          // Fallback genre detection if artist metadata fails
+          let genre = artistMetadata?.genres?.[0] || "Unknown Genre";
+          if (genre === "Unknown Genre") {
+            // Try to infer genre from album name or track name
+            const albumName = track.album?.name?.toLowerCase() || "";
+            const trackName = track.name?.toLowerCase() || "";
+            
+            if (albumName.includes("classical") || trackName.includes("prelude") || trackName.includes("piano")) {
+              genre = "classical";
+            } else if (albumName.includes("pop") || trackName.includes("pop")) {
+              genre = "pop";
+            } else if (albumName.includes("rock") || trackName.includes("rock")) {
+              genre = "rock";
+            } else if (albumName.includes("jazz") || trackName.includes("jazz")) {
+              genre = "jazz";
+            } else {
+              genre = "pop"; // Default fallback
+            }
+          }
 
           historyTracks.push({
-            id: track[0].id,
-            title: track[0].name,
-            artist: track[0].artists[0]?.name || "Unknown Artist",
-            genre: artistMetadata?.genres?.[0] || "Unknown Genre",
-            popularity: track[0].popularity,
-            releaseYear: track[0].album?.release_date ? new Date(track[0].album.release_date).getFullYear() : undefined,
-            album: track[0].album?.name,
+            id: track.id,
+            title: track.name,
+            artist: track.artists[0]?.name || "Unknown Artist",
+            genre: genre,
+            popularity: track.popularity,
+            releaseYear: track.album?.release_date ? new Date(track.album.release_date).getFullYear() : undefined,
+            album: track.album?.name,
           });
+          
+          console.log(`Successfully fetched track: ${track.name} by ${track.artists[0]?.name} (${genre})`);
+        } else {
+          console.warn(`Failed to fetch track ${trackId}: ${response.status}`);
         }
       } catch (error) {
         console.warn(`Failed to fetch track ${trackId}:`, error);
       }
     }
+    
+    console.log(`Successfully processed ${historyTracks.length} tracks from listening history:`, 
+      historyTracks.map(t => `${t.title} by ${t.artist} (${t.genre})`));
 
     // Determine search strategy based on listening history
-    let searchQuery = "";
+    let searchQueries: string[] = [];
+    let allTracks: SpotifyTrack[] = [];
+    
     if (historyTracks.length > 0) {
+      const sequencePattern = analyzeListeningSequence(historyTracks);
+      const allGenres = historyTracks.map(t => t.genre);
+      const allArtists = historyTracks.map(t => t.artist);
+      
+      // Get predicted genres for next track
       const lastTrack = historyTracks[historyTracks.length - 1];
-      // Search for similar tracks to the last track in history
-      searchQuery = `${lastTrack.title} ${lastTrack.artist}`;
+      const predictedGenres = predictNextGenre(sequencePattern.genreTransitions, lastTrack.genre, allGenres);
+      
+      // Create multiple search queries with balanced approach
+      searchQueries = [
+        // 1. User preferred genres (highest priority)
+        ...(preferences.preferredGenres || []).slice(0, 2),
+        // 2. Search by predicted genres from history
+        ...predictedGenres.slice(0, 2),
+        // 3. Search by most frequent artists in history
+        ...Array.from(new Set(allArtists)).slice(0, 2),
+        // 4. Search by last track for continuity
+        `${lastTrack.title} ${lastTrack.artist}`,
+        // 5. Search by genre transitions
+        ...Object.keys(sequencePattern.genreTransitions)
+          .filter(t => t.includes(lastTrack.genre))
+          .slice(0, 2)
+          .map(t => t.split('->')[1])
+      ];
+      
+      // Remove duplicates and empty strings
+      searchQueries = [...new Set(searchQueries)].filter(q => q && q.trim().length > 0);
+      
+      // Limit to 6 queries to avoid too many API calls
+      searchQueries = searchQueries.slice(0, 6);
+      
+      console.log('Search queries based on history:', searchQueries);
+      
+      // Fetch tracks from multiple queries
+      const trackPromises = searchQueries.map(async (query, index) => {
+        try {
+          console.log(`Fetching tracks for query ${index + 1}: "${query}"`);
+          const tracks = await fetchSpotifyTracks(accessToken, query);
+          console.log(`Found ${tracks.length} tracks for query: "${query}"`);
+          return tracks;
+        } catch (error) {
+          console.warn(`Failed to fetch tracks for query "${query}":`, error);
+          return [];
+        }
+      });
+      
+      const trackResults = await Promise.all(trackPromises);
+      allTracks = trackResults.flat();
+      console.log(`Total tracks found from all queries: ${allTracks.length}`);
+      
     } else {
       // Fallback to preferred genre
-      searchQuery = preferences.preferredGenres[0];
+      searchQueries = preferences.preferredGenres.slice(0, 3);
+      allTracks = await fetchSpotifyTracks(accessToken, searchQueries[0]);
+      console.log('No history - using genre-based search:', searchQueries);
     }
 
-    const tracks = await fetchSpotifyTracks(accessToken, searchQuery);
+    // Remove duplicate tracks based on ID
+    const uniqueTracks = allTracks.filter((track, index, self) => 
+      index === self.findIndex(t => t.id === track.id)
+    );
+    
+    console.log(`Found ${uniqueTracks.length} unique tracks from ${searchQueries.length} search queries`);
 
     const recommendations = await Promise.all(
-      tracks.map(async (track) => {
+      uniqueTracks.map(async (track) => {
         try {
           const artistMetadata = await fetchArtistMetadata(accessToken, track.artists[0]?.id);
 
@@ -386,6 +564,18 @@ export async function POST(req: Request) {
           };
 
           const score = scoreTrackForSequence(trackMetadata, historyTracks, preferences);
+          
+          // Debug logging for first few tracks
+          if (uniqueTracks.indexOf(track) < 3) {
+            console.log(`Scoring track: "${trackMetadata.title}" by ${trackMetadata.artist}`);
+            console.log(`  Genre: ${trackMetadata.genre}, Score: ${score}`);
+            console.log(`  User preferred genres: ${preferences.preferredGenres?.join(', ') || 'none'}`);
+            console.log(`  User mood: ${preferences.mood || 'none'}`);
+            if (historyTracks.length > 0) {
+              const lastTrack = historyTracks[historyTracks.length - 1];
+              console.log(`  Last track: "${lastTrack.title}" by ${lastTrack.artist} (${lastTrack.genre})`);
+            }
+          }
 
           return {
             track: trackMetadata,
@@ -431,6 +621,7 @@ export async function POST(req: Request) {
 
     // Add sequence analysis to response
     const sequenceAnalysis = historyTracks.length > 0 ? analyzeListeningSequence(historyTracks) : null;
+    const sequencePattern = sequenceAnalysis;
     
     // Calculate evaluation metrics
     const evaluationMetrics = {
@@ -445,7 +636,16 @@ export async function POST(req: Request) {
         sequenceAnalysis,
         evaluationMetrics,
         totalTracksAnalyzed: historyTracks.length,
-        searchStrategy: historyTracks.length > 0 ? 'sequence-based' : 'genre-based'
+        searchStrategy: historyTracks.length > 0 ? 'sequence-based' : 'genre-based',
+        searchQueries: searchQueries,
+        totalTracksFound: uniqueTracks.length,
+        debugInfo: {
+          predictedGenres: historyTracks.length > 0 ? 
+            predictNextGenre(analyzeListeningSequence(historyTracks).genreTransitions, historyTracks[historyTracks.length - 1].genre, historyTracks.map(t => t.genre)) : 
+            [],
+          genreTransitions: sequencePattern?.genreTransitions || {},
+          artistDiversity: sequencePattern?.artistDiversity || 0
+        }
       },
       { status: 200 }
     );
