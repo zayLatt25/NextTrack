@@ -6,6 +6,7 @@ A Next.js-based music recommendation system that analyzes listening sequences to
 
 - **Sequence-aware recommendations**: Analyzes listening history patterns to predict the next track
 - **Multi-factor scoring**: Genre transitions, artist patterns, popularity trends, and mood matching
+- **Multi-genre selection**: Frontend supports selecting multiple preferred genres simultaneously
 - **Stateless design**: No user tracking, privacy-focused approach
 - **Evaluation metrics**: Built-in quality assessment for recommendation quality
 - **Metadata-based**: Uses Spotify API for track metadata (no audio features required)
@@ -243,7 +244,7 @@ const response = await fetch('/api/recommend', {
   body: JSON.stringify({
     listeningHistory: ['4iV5W9uYEdYUVa79Axb7Rh', '3n3Ppam7vgaVa1iaRUmn9T'],
     preferences: {
-      preferredGenres: ['pop', 'indie'],
+      preferredGenres: ['pop', 'indie', 'rock'],
       mood: 'happy'
     },
     context: {
@@ -259,13 +260,13 @@ console.log(data.recommendations);
 
 ### Test the API
 ```bash
-# Test basic functionality
+# Test with multiple genres
 curl -X POST http://localhost:3000/api/recommend \
   -H "Content-Type: application/json" \
   -d '{
     "listeningHistory": ["4iV5W9uYEdYUVa79Axb7Rh"],
     "preferences": {
-      "preferredGenres": ["pop"],
+      "preferredGenres": ["pop", "rock", "indie"],
       "mood": "happy"
     }
   }'
