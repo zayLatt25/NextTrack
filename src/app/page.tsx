@@ -43,6 +43,8 @@ export default function Home() {
   const [mood, setMood] = useState<string | undefined>();
   const [currentTrack, setCurrentTrack] = useState<string | undefined>();
   const [listeningHistory, setListeningHistory] = useState<string>(""); // New: listening history input
+  const [timeOfDay, setTimeOfDay] = useState<string | undefined>();
+  const [activity, setActivity] = useState<string | undefined>();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null); // Track ID for the player
   const [loading, setLoading] = useState<boolean>(false); // Loading state for the button
@@ -72,6 +74,10 @@ export default function Home() {
             preferredGenres: preferredGenres,
             mood: mood || undefined,
             currentTrack: currentTrack || undefined,
+          },
+          context: {
+            timeOfDay: timeOfDay || undefined,
+            activity: activity || undefined,
           },
         }),
       });
@@ -182,6 +188,36 @@ export default function Home() {
                   {mood}
                 </option>
               ))}
+            </select>
+          </div>
+          <div className="mb-4">
+            <label className="block text-md font-medium text-gray-900">
+              Time of Day
+            </label>
+            <select
+              className="mt-1 block w-full p-2 border border-gray-300 rounded bg-white text-gray-900"
+              onChange={(e) => setTimeOfDay(e.target.value || undefined)}
+            >
+              <option value="">Select time of day</option>
+              <option value="morning">Morning</option>
+              <option value="afternoon">Afternoon</option>
+              <option value="evening">Evening</option>
+              <option value="night">Night</option>
+            </select>
+          </div>
+          <div className="mb-4">
+            <label className="block text-md font-medium text-gray-900">
+              Activity
+            </label>
+            <select
+              className="mt-1 block w-full p-2 border border-gray-300 rounded bg-white text-gray-900"
+              onChange={(e) => setActivity(e.target.value || undefined)}
+            >
+              <option value="">Select activity</option>
+              <option value="workout">Workout</option>
+              <option value="study">Study</option>
+              <option value="party">Party</option>
+              <option value="relax">Relax</option>
             </select>
           </div>
           <div className="mb-4">

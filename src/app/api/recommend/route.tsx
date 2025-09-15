@@ -53,6 +53,47 @@ type SequencePattern = {
 };
 
 
+// Context-based scoring functions
+function getContextPreferences(context?: { timeOfDay?: string, activity?: string }): { preferredGenres: string[], popularityRange: [number, number] } {
+  if (!context) return { preferredGenres: [], popularityRange: [0, 100] };
+  
+  const { timeOfDay, activity } = context;
+  const preferredGenres: string[] = [];
+  let popularityRange: [number, number] = [0, 100];
+  
+  // Time of day preferences
+  if (timeOfDay === 'morning') {
+    preferredGenres.push('pop', 'indie', 'acoustic');
+    popularityRange = [40, 80];
+  } else if (timeOfDay === 'afternoon') {
+    preferredGenres.push('pop', 'rock', 'indie');
+    popularityRange = [50, 90];
+  } else if (timeOfDay === 'evening') {
+    preferredGenres.push('jazz', 'soul', 'r&b');
+    popularityRange = [30, 70];
+  } else if (timeOfDay === 'night') {
+    preferredGenres.push('electronic', 'ambient', 'chill');
+    popularityRange = [20, 60];
+  }
+  
+  // Activity preferences
+  if (activity === 'workout') {
+    preferredGenres.push('electronic', 'dance', 'hip-hop', 'rock');
+    popularityRange = [60, 100];
+  } else if (activity === 'study') {
+    preferredGenres.push('classical', 'ambient', 'jazz', 'instrumental');
+    popularityRange = [10, 50];
+  } else if (activity === 'party') {
+    preferredGenres.push('dance', 'electronic', 'pop', 'hip-hop');
+    popularityRange = [70, 100];
+  } else if (activity === 'relax') {
+    preferredGenres.push('ambient', 'acoustic', 'folk', 'chill');
+    popularityRange = [10, 60];
+  }
+  
+  return { preferredGenres, popularityRange };
+}
+
 // Mood to metadata preferences mapping
 function getMoodPreferences(mood: string): { preferredGenres: string[], popularityRange: [number, number] } {
   const moodMappings: Record<string, { preferredGenres: string[], popularityRange: [number, number] }> = {
@@ -273,7 +314,8 @@ function analyzeListeningSequence(tracks: TrackMetadata[]): SequencePattern {
 function scoreTrackForSequence(
   track: TrackMetadata, 
   listeningHistory: TrackMetadata[], 
-  preferences: UserPreferences
+  preferences: UserPreferences,
+  context?: { timeOfDay?: string, activity?: string }
 ): number {
   let score = 0;
   
@@ -340,7 +382,14 @@ function scoreTrackForSequence(
     score += 1; // Bonus for genres that appear frequently in history
   }
   
-  // 7. Perfect match bonus (weight 2) - tracks that match both user preferences AND history patterns
+  // 7. Context-based scoring (weight 1.5) - time of day and activity preferences
+  if (context) {
+    const contextPreferences = getContextPreferences(context);
+    const contextSimilarity = calculateMoodSimilarity(track, contextPreferences);
+    score += contextSimilarity * 1.5;
+  }
+  
+  // 8. Perfect match bonus (weight 2) - tracks that match both user preferences AND history patterns
   const isUserGenreMatch = preferences.preferredGenres?.includes(track.genre) || false;
   const isHistoryGenreMatch = predictedGenres.includes(track.genre);
   const isUserMoodMatch = preferences.mood ? calculateMoodSimilarity(track, getMoodPreferences(preferences.mood)) > 0.5 : false;
@@ -563,7 +612,7 @@ export async function POST(req: Request) {
             album: track.album?.name,
           };
 
-          const score = scoreTrackForSequence(trackMetadata, historyTracks, preferences);
+          const score = scoreTrackForSequence(trackMetadata, historyTracks, preferences, body.context);
           
           // Debug logging for first few tracks
           if (uniqueTracks.indexOf(track) < 3) {
@@ -594,7 +643,7 @@ export async function POST(req: Request) {
             album: track.album?.name,
           };
 
-          const score = scoreTrackForSequence(trackMetadata, historyTracks, preferences);
+          const score = scoreTrackForSequence(trackMetadata, historyTracks, preferences, body.context);
 
           return {
             track: trackMetadata,
