@@ -110,7 +110,7 @@ function calculateMoodSimilarity(
 
 
 
-function scoreTrack(track: TrackMetadata, prefs: UserPreferences, selectedTracks?: SelectedTrack[], extractedGenres?: string[]): number {
+function scoreTrack(track: TrackMetadata, prefs: UserPreferences, selectedTracks?: SelectedTrack[], extractedGenres?: string[], context?: { timeOfDay?: string, activity?: string }): number {
   let score = 0;
 
   // 1. Genre match scoring (weight 3) - using extracted genres
@@ -131,7 +131,13 @@ function scoreTrack(track: TrackMetadata, prefs: UserPreferences, selectedTracks
     score += moodSimilarity * 3;
   }
 
-  // 4. Popularity bonus (weight 1)
+  // 4. Context-based scoring (weight 2)
+  if (context) {
+    const contextScore = calculateContextScore(track, context);
+    score += contextScore * 2;
+  }
+
+  // 5. Popularity bonus (weight 1)
   if (track.popularity && track.popularity > 70) {
     score += 1;
   }
@@ -187,6 +193,108 @@ function calculateTitleSimilarity(title1: string, title2: string): number {
   return commonWords.length / Math.max(words1.length, words2.length);
 }
 
+// Calculate context-based score for time of day and activity
+function calculateContextScore(track: TrackMetadata, context: { timeOfDay?: string, activity?: string }): number {
+  let score = 0;
+  
+  // Time of day scoring
+  if (context.timeOfDay) {
+    const timeScore = getTimeOfDayScore(track, context.timeOfDay);
+    score += timeScore * 0.6; // 60% weight for time of day
+  }
+  
+  // Activity scoring
+  if (context.activity) {
+    const activityScore = getActivityScore(track, context.activity);
+    score += activityScore * 0.4; // 40% weight for activity
+  }
+  
+  return Math.min(score, 1.0); // Cap at 1.0
+}
+
+// Get time of day score based on track characteristics
+function getTimeOfDayScore(track: TrackMetadata, timeOfDay: string): number {
+  const genre = track.genre.toLowerCase();
+  const popularity = track.popularity || 50;
+  
+  switch (timeOfDay) {
+    case 'morning':
+      // Morning: upbeat, energetic, popular tracks
+      if (['pop', 'dance', 'electronic'].includes(genre) && popularity > 60) return 1.0;
+      if (['rock', 'indie-pop'].includes(genre) && popularity > 40) return 0.8;
+      if (['jazz', 'acoustic'].includes(genre)) return 0.6;
+      return 0.3;
+      
+    case 'afternoon':
+      // Afternoon: balanced, moderate energy
+      if (['pop', 'indie', 'alternative'].includes(genre)) return 0.9;
+      if (['rock', 'electronic'].includes(genre) && popularity > 30) return 0.7;
+      if (['jazz', 'acoustic', 'folk'].includes(genre)) return 0.8;
+      return 0.5;
+      
+    case 'evening':
+      // Evening: more relaxed, but still engaging
+      if (['indie', 'alternative', 'acoustic'].includes(genre)) return 1.0;
+      if (['pop', 'electronic'].includes(genre) && popularity > 40) return 0.8;
+      if (['jazz', 'ambient'].includes(genre)) return 0.9;
+      if (['rock'].includes(genre)) return 0.6;
+      return 0.4;
+      
+    case 'night':
+      // Night: chill, ambient, or energetic party music
+      if (['ambient', 'chill', 'electronic'].includes(genre)) return 1.0;
+      if (['jazz', 'acoustic', 'indie'].includes(genre)) return 0.9;
+      if (['dance', 'electronic'].includes(genre) && popularity > 70) return 0.8;
+      if (['rock', 'metal'].includes(genre)) return 0.5;
+      return 0.3;
+      
+    default:
+      return 0.5;
+  }
+}
+
+// Get activity score based on track characteristics
+function getActivityScore(track: TrackMetadata, activity: string): number {
+  const genre = track.genre.toLowerCase();
+  const popularity = track.popularity || 50;
+  
+  switch (activity) {
+    case 'workout':
+      // Workout: high energy, fast tempo genres
+      if (['rock', 'electronic', 'dance', 'hip-hop', 'metal'].includes(genre)) return 1.0;
+      if (['pop'].includes(genre) && popularity > 60) return 0.8;
+      if (['indie', 'alternative'].includes(genre) && popularity > 40) return 0.6;
+      return 0.2;
+      
+    case 'study':
+      // Study: instrumental, ambient, or calm music
+      if (['ambient', 'classical', 'jazz', 'acoustic'].includes(genre)) return 1.0;
+      if (['indie', 'folk'].includes(genre)) return 0.8;
+      if (['electronic'].includes(genre) && popularity < 50) return 0.6;
+      if (['rock', 'metal', 'dance'].includes(genre)) return 0.2;
+      return 0.4;
+      
+    case 'party':
+      // Party: dance, electronic, popular tracks
+      if (['dance', 'electronic', 'pop'].includes(genre) && popularity > 60) return 1.0;
+      if (['hip-hop', 'rock'].includes(genre) && popularity > 50) return 0.8;
+      if (['indie-pop'].includes(genre) && popularity > 40) return 0.7;
+      if (['ambient', 'classical', 'acoustic'].includes(genre)) return 0.1;
+      return 0.3;
+      
+    case 'relax':
+      // Relax: calm, ambient, acoustic music
+      if (['ambient', 'classical', 'jazz', 'acoustic', 'chill'].includes(genre)) return 1.0;
+      if (['indie', 'folk'].includes(genre)) return 0.9;
+      if (['electronic'].includes(genre) && popularity < 60) return 0.7;
+      if (['rock', 'metal', 'dance'].includes(genre)) return 0.2;
+      return 0.5;
+      
+    default:
+      return 0.5;
+  }
+}
+
 // Extract genres from selected tracks
 async function extractGenresFromTracks(accessToken: string, selectedTracks: SelectedTrack[]): Promise<string[]> {
   const allGenres = new Set<string>();
@@ -230,7 +338,8 @@ export async function POST(req: Request) {
   const body = await req.json();
   const { 
     selectedTracks,
-    preferences
+    preferences,
+    context
   }: RecommendationRequest = body;
 
   // Validate input
@@ -306,7 +415,7 @@ export async function POST(req: Request) {
             album: track.album?.name,
           };
 
-          const score = scoreTrack(trackMetadata, preferences, selectedTracks, extractedGenres);
+          const score = scoreTrack(trackMetadata, preferences, selectedTracks, extractedGenres, context);
           
           // Debug logging for first few tracks
           if (uniqueTracks.indexOf(track) < 3) {
@@ -314,6 +423,7 @@ export async function POST(req: Request) {
             console.log(`  Genre: ${trackMetadata.genre}, Score: ${score}`);
             console.log(`  Extracted genres: ${extractedGenres?.join(', ') || 'none'}`);
             console.log(`  User mood: ${preferences.mood || 'none'}`);
+            console.log(`  Context: timeOfDay=${context?.timeOfDay || 'none'}, activity=${context?.activity || 'none'}`);
           }
 
           return {
@@ -333,7 +443,7 @@ export async function POST(req: Request) {
             album: track.album?.name,
           };
 
-          const score = scoreTrack(trackMetadata, preferences, selectedTracks, extractedGenres);
+          const score = scoreTrack(trackMetadata, preferences, selectedTracks, extractedGenres, context);
 
           return {
             track: trackMetadata,
@@ -355,19 +465,28 @@ export async function POST(req: Request) {
         )
     );
 
+    // Filter out selected tracks from recommendations
+    const selectedTrackIds = new Set(selectedTracks.map(track => track.id));
+    const filteredRecommendations = uniqueRecommendations.filter(
+      (rec) => !selectedTrackIds.has(rec.track.id)
+    );
+    
+    console.log(`Filtered out ${uniqueRecommendations.length - filteredRecommendations.length} selected tracks from recommendations`);
+    console.log(`Final recommendations count: ${filteredRecommendations.length}`);
+
     // Sort recommendations by score in descending order
-    uniqueRecommendations.sort((a, b) => b.score - a.score);
+    filteredRecommendations.sort((a, b) => b.score - a.score);
     
     // Calculate evaluation metrics
     const evaluationMetrics = {
-      genreCoherence: calculateGenreCoherence(uniqueRecommendations),
-      popularitySmoothness: calculatePopularitySmoothness(uniqueRecommendations),
-      genreConsistency: calculateGenreConsistency(uniqueRecommendations)
+      genreCoherence: calculateGenreCoherence(filteredRecommendations),
+      popularitySmoothness: calculatePopularitySmoothness(filteredRecommendations),
+      genreConsistency: calculateGenreConsistency(filteredRecommendations)
     };
 
     return NextResponse.json(
       { 
-        recommendations: uniqueRecommendations,
+        recommendations: filteredRecommendations,
         evaluationMetrics,
         searchStrategy: 'track-based',
         searchQueries: searchQueries,
