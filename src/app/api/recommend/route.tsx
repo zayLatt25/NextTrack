@@ -124,41 +124,33 @@ function scoreTrack(
 ): number {
   let score = 0;
 
-  // 1. Genre match scoring (weight 3) - using extracted genres
-  if (extractedGenres && extractedGenres.includes(track.genre)) {
-    score += 3;
+  // --- Genre match scoring (weight 3) ---
+  if (extractedGenres?.includes(track.genre)) score += 3;
+
+  // --- Selected tracks similarity (cap 2) ---
+  if (selectedTracks?.length) {
+    const similarity = calculateTrackSimilarity(track, selectedTracks);
+    score += Math.min(similarity * 2, 2);
   }
 
-  // 2. Selected tracks similarity scoring (CAPPED at 2)
-  if (selectedTracks && selectedTracks.length > 0) {
-    const trackSimilarity = calculateTrackSimilarity(track, selectedTracks);
-    score += Math.min(trackSimilarity * 2, 2); // cap contribution
-  }
-
-  // 3. Mood-based metadata scoring (weight 3 + override)
+  // --- Mood similarity (weight 3 + penalty if mismatch) ---
   if (prefs.mood) {
     const moodPreferences = getMoodPreferences(prefs.mood);
     const moodSimilarity = calculateMoodSimilarity(track, moodPreferences);
 
-    if (moodSimilarity < 0.2) {
-      score -= 1.5; // penalty for failing mood
-    } else {
-      score += moodSimilarity * 3;
-    }
+    score += moodSimilarity >= 0.2 ? moodSimilarity * 3 : -1.5;
   }
 
-  // 4. Context-based scoring (weight 2)
+  // --- Context scoring (weight 2) ---
   if (context) {
     const contextScore = calculateContextScore(track, context);
     score += contextScore * 2;
   }
 
-  // 5. Popularity bonus (weight 1)
-  if (track.popularity && track.popularity > 70) {
-    score += 1;
-  }
+  // --- Popularity bonus (weight 1) ---
+  if ((track.popularity ?? 0) > 70) score += 1;
 
-  return Math.round(score * 100) / 100; // Round to 2 decimals
+  return Math.round(score * 100) / 100;
 }
 
 
@@ -342,10 +334,13 @@ async function extractGenresFromTracks(
 ): Promise<string[]> {
   const allGenres = new Set<string>();
 
-  for (const track of selectedTracks) {
-    try {
+  // Parallelize all artist metadata fetches
+  await Promise.all(
+    selectedTracks.map(async (track) => {
       const artistName = track.artists[0]?.name;
-      if (artistName) {
+      if (!artistName) return;
+
+      try {
         const artistSearchResponse = await fetch(
           `https://api.spotify.com/v1/search?q=${encodeURIComponent(
             artistName
@@ -357,30 +352,26 @@ async function extractGenresFromTracks(
           }
         );
 
-        if (artistSearchResponse.ok) {
-          const artistSearchData = await artistSearchResponse.json();
-          const artist = artistSearchData.artists?.items?.[0];
-
-          if (artist?.id) {
-            const artistMetadata = await fetchArtistMetadata(
-              accessToken,
-              artist.id
-            );
-            if (artistMetadata?.genres) {
-              artistMetadata.genres.forEach((genre: string) =>
-                allGenres.add(genre)
-              );
-            }
-          }
+        if (!artistSearchResponse.ok) {
+          console.warn(
+            `Spotify search failed for artist ${artistName}: ${artistSearchResponse.status}`
+          );
+          return;
         }
+
+        const artistSearchData = await artistSearchResponse.json();
+        const artist = artistSearchData.artists?.items?.[0];
+        if (!artist?.id) return;
+
+        const artistMetadata = await fetchArtistMetadata(accessToken, artist.id);
+        if (artistMetadata?.genres) {
+          artistMetadata.genres.forEach((genre: string) => allGenres.add(genre));
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch genres for ${artistName}:`, error);
       }
-    } catch (error) {
-      console.warn(
-        `Failed to extract genres for track ${track.name}:`,
-        error
-      );
-    }
-  }
+    })
+  );
 
   return Array.from(allGenres);
 }
