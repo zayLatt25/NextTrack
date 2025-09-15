@@ -1,16 +1,17 @@
 # NextTrack Prototype
 
-A Next.js-based music recommendation system that analyzes listening sequences to suggest the next track. Built with TypeScript and integrated with the Spotify API.
+A Next.js-based music recommendation system that suggests tracks based on user-selected reference tracks. Built with TypeScript and integrated with the Spotify API.
 
 ## 🎯 Features
 
-- **Sequence-aware recommendations**: Analyzes listening history patterns to predict the next track
-- **Multi-factor scoring**: Genre transitions, artist patterns, popularity trends, and mood matching
-- **Multi-genre selection**: Frontend supports selecting multiple preferred genres simultaneously
+- **Track-based recommendations**: Analyzes selected reference tracks to suggest similar music
+- **Multi-factor scoring**: Track similarity, mood matching, context awareness, and popularity
+- **Track search and selection**: Built-in Spotify search interface for finding reference tracks
 - **Stateless design**: No user tracking, privacy-focused approach
 - **Evaluation metrics**: Built-in quality assessment for recommendation quality
 - **Metadata-based**: Uses Spotify API for track metadata (no audio features required)
 - **Mood-aware**: Supports mood-based genre and popularity matching
+- **Context-aware**: Considers time of day and activity for better recommendations
 
 ## 🚀 Getting Started
 
@@ -51,14 +52,21 @@ npm run dev
 
 ### POST `/api/recommend`
 
-Get music recommendations based on listening history and preferences.
+Get music recommendations based on selected reference tracks and preferences.
 
 **Request Body:**
 ```json
 {
-  "listeningHistory": ["track_id_1", "track_id_2", "track_id_3"],
+  "selectedTracks": [
+    {
+      "id": "track_id_1",
+      "name": "Song Name",
+      "artists": [{"name": "Artist Name"}],
+      "album": {"name": "Album Name"},
+      "popularity": 80
+    }
+  ],
   "preferences": {
-    "preferredGenres": ["pop", "rock", "indie"],
     "mood": "happy"
   },
   "context": {
@@ -85,27 +93,46 @@ Get music recommendations based on listening history and preferences.
       "score": 8.5
     }
   ],
-  "sequenceAnalysis": {
-    "genreTransitions": {"pop->rock": 2, "rock->indie": 1},
-    "artistTransitions": {"Artist A->Artist B": 1, "Artist B->Artist C": 1},
-    "popularityTrend": [85, 90, 75],
-    "releaseYearTrend": [2023, 2022, 2024],
-    "artistDiversity": 0.6
-  },
   "evaluationMetrics": {
     "genreCoherence": 0.8,
     "popularitySmoothness": 0.9,
     "genreConsistency": 0.7
   },
-  "totalTracksAnalyzed": 3,
-  "searchStrategy": "sequence-based",
-  "searchQueries": ["pop", "classical", "Artist Name", "Song Title Artist Name"],
+  "searchStrategy": "track-based",
+  "searchQueries": ["Song Name Artist Name", "pop", "indie"],
   "totalTracksFound": 79,
-  "debugInfo": {
-    "predictedGenres": ["pop", "classical"],
-    "genreTransitions": {"classical->pop": 1, "pop->rock": 2},
-    "artistDiversity": 0.6
-  }
+  "selectedTracksCount": 1,
+  "extractedGenres": ["pop", "indie"]
+}
+```
+
+### POST `/api/search`
+
+Search for tracks using Spotify's search API.
+
+**Request Body:**
+```json
+{
+  "query": "search term"
+}
+```
+
+**Response:**
+```json
+{
+  "tracks": [
+    {
+      "id": "track_id",
+      "name": "Song Name",
+      "artists": [{"name": "Artist Name"}],
+      "album": {"name": "Album Name"},
+      "popularity": 80,
+      "preview_url": "https://...",
+      "external_urls": {"spotify": "https://..."}
+    }
+  ],
+  "query": "search term",
+  "total": 20
 }
 ```
 
@@ -118,13 +145,20 @@ Get API information and usage examples.
 {
   "message": "NextTrack Recommendation API",
   "endpoints": {
-    "POST /api/recommend": "Get music recommendations based on listening history",
+    "POST /api/recommend": "Get music recommendations based on selected tracks",
     "GET /api/recommend?action=evaluate": "Get evaluation metrics and test data"
   },
   "example": {
-    "listeningHistory": ["4iV5W9uYEdYUVa79Axb7Rh", "3n3Ppam7vgaVa1iaRUmn9T"],
+    "selectedTracks": [
+      {
+        "id": "4iV5W9uYEdYUVa79Axb7Rh",
+        "name": "Song Name",
+        "artists": [{"name": "Artist Name"}],
+        "album": {"name": "Album Name"},
+        "popularity": 80
+      }
+    ],
     "preferences": {
-      "preferredGenres": ["pop", "rock"],
       "mood": "happy"
     },
     "context": {
@@ -135,56 +169,66 @@ Get API information and usage examples.
 }
 ```
 
+### GET `/api/search`
+
+Get search API information.
+
+**Response:**
+```json
+{
+  "message": "Spotify Search API",
+  "usage": "Send POST request with { query: 'search term' } to search for tracks"
+}
+```
+
 ### GET `/api/recommend?action=evaluate`
 
 Get evaluation metrics and test data for testing the recommendation system.
 
 ## 🧮 Scoring Algorithm
 
-The recommendation system uses a balanced multi-factor scoring approach that prioritizes user preferences while incorporating listening history patterns:
+The recommendation system uses a balanced multi-factor scoring approach that prioritizes track similarity and user preferences:
 
-1. **User Preferences** (Weight: 5) - **Highest Priority**
-   - Genre preferences matching
-   - Mood-based genre and popularity matching
-   - Title similarity scoring
-   - Full weight given to user-specified preferences
+1. **Track Similarity** (Weight: 4) - **Highest Priority**
+   - Artist similarity matching (50% weight)
+   - Title similarity scoring (30% weight)
+   - Popularity similarity (20% weight)
+   - Compares against all selected reference tracks
 
-2. **Genre Transition Probability** (Weight: 2)
-   - Analyzes genre transitions in listening history
-   - Predicts most likely next genre based on patterns
-   - Considers both direct transitions and overall genre frequency
+2. **Genre Matching** (Weight: 3)
+   - Matches against genres extracted from selected tracks
+   - Auto-extracts genres from artist metadata
+   - Rewards tracks with matching genres
 
-3. **Popularity Progression** (Weight: 1)
-   - Ensures smooth popularity transitions
-   - Maintains consistent listening level based on trends
+3. **Mood-based Scoring** (Weight: 3)
+   - Genre matching based on mood preferences
+   - Popularity range matching for mood context
+   - Mood-specific genre and popularity combinations
 
-4. **Artist Transition** (Weight: 1)
-   - Tracks artist patterns in listening history
-   - Maintains artist flow consistency
+4. **Context Awareness** (Weight: 2)
+   - Time of day scoring (60% weight)
+   - Activity-based scoring (40% weight)
+   - Considers morning/afternoon/evening/night preferences
+   - Matches workout/study/party/relax activity contexts
 
-5. **Artist Diversity** (Weight: 1-1.5)
-   - Adaptive diversity based on listening patterns
-   - Low diversity: encourages new artists (1.5x bonus)
-   - High diversity: allows artist continuity (0.5x bonus)
+5. **Popularity Bonus** (Weight: 1)
+   - Rewards tracks with popularity > 70
+   - Helps surface well-known tracks
 
-6. **Genre Frequency Bonus** (Weight: 1)
-   - Rewards genres that appear frequently in listening history
-   - Helps maintain genre consistency
+**Scoring Formula:**
+```
+Score = (Track Similarity × 4) + (Genre Match × 3) + (Mood Similarity × 3) + (Context Score × 2) + (Popularity Bonus × 1)
+```
 
-7. **Perfect Match Bonus** (Weight: 2-3.5)
-   - Extra scoring for tracks matching both user preferences AND history patterns
-   - Genre + history match: +2 points
-   - Mood + history match: +1.5 points
+## 🔍 Track Analysis
 
-## 🔍 Sequence Analysis
+The system analyzes selected reference tracks to understand user preferences:
 
-The system analyzes listening patterns to understand user behavior:
-
-- **Genre Transitions**: Tracks how genres flow together in listening history
-- **Artist Transitions**: Monitors artist patterns and transitions over time
-- **Popularity Trends**: Analyzes popularity progression and smoothness
-- **Release Year Trends**: Tracks temporal patterns in music selection
-- **Artist Diversity**: Measures variety in artist selection
+- **Genre Extraction**: Automatically extracts genres from artist metadata
+- **Artist Analysis**: Identifies artist patterns and preferences
+- **Popularity Analysis**: Understands preferred popularity ranges
+- **Mood Mapping**: Maps tracks to mood-based preferences
+- **Context Matching**: Matches tracks to time and activity contexts
 
 ## 📊 Evaluation Metrics
 
@@ -196,15 +240,27 @@ Built-in quality assessment includes:
 
 ## 🎵 How It Works
 
-1. **Input Processing**: Validates listening history and preferences
-2. **History Analysis**: Fetches metadata for all tracks in listening history using direct Spotify API calls
-3. **Pattern Recognition**: Analyzes genre, artist, and popularity patterns from listening history
-4. **Multi-Query Search Strategy**: 
-   - **With History**: Creates multiple search queries prioritizing user preferences, then history patterns
-   - **Without History**: Falls back to genre-based search
-   - **Search Queries Include**: User preferred genres, predicted genres, frequent artists, last track, genre transitions
-5. **Track Discovery**: Fetches tracks from multiple Spotify API searches and removes duplicates
-6. **Balanced Scoring**: Applies multi-factor scoring algorithm with user preferences as highest priority
+### User Interface Workflow
+1. **Search Tracks**: Use the search bar to find songs, artists, or albums
+2. **Select Reference Tracks**: Add tracks to your selection from search results
+3. **Set Preferences**: Choose mood, time of day, and activity context
+4. **Get Recommendations**: Click "Get Recommendations" to receive personalized suggestions
+5. **Play Tracks**: Use the embedded Spotify player to preview recommendations
+
+### Backend Processing
+1. **Track Selection**: Users search and select reference tracks using the built-in search interface
+2. **Genre Extraction**: System automatically extracts genres from selected tracks' artist metadata
+3. **Search Query Generation**: Creates multiple search queries based on:
+   - Selected track names and artists
+   - Extracted genres from reference tracks
+4. **Track Discovery**: Fetches tracks from multiple Spotify API searches and removes duplicates
+5. **Multi-Factor Scoring**: Applies scoring algorithm considering:
+   - Track similarity to reference tracks
+   - Genre matching with extracted genres
+   - Mood-based preferences
+   - Context awareness (time of day, activity)
+   - Popularity bonuses
+6. **Filtering**: Removes selected reference tracks from recommendations
 7. **Ranking**: Sorts recommendations by calculated scores (rounded to 2 decimal places)
 8. **Evaluation**: Calculates quality metrics for assessment
 
@@ -220,11 +276,13 @@ The system supports mood-based recommendations with predefined mappings:
 ## 🏆 Project Requirements
 
 ✅ **Stateless API**: No user tracking or data persistence  
-✅ **Listening History Input**: Accepts sequence of track identifiers  
-✅ **External Data Sources**: Integrates with Spotify API  
-✅ **Evaluation Strategy**: Built-in quality metrics  
+✅ **Track Selection Input**: Accepts selected reference tracks for recommendations  
+✅ **External Data Sources**: Integrates with Spotify API for search and metadata  
+✅ **Evaluation Strategy**: Built-in quality metrics for recommendation assessment  
 ✅ **RESTful Design**: Standard HTTP methods and responses  
 ✅ **Better than Random**: Sophisticated multi-factor scoring algorithm  
+✅ **Search Functionality**: Built-in track search interface  
+✅ **Context Awareness**: Time of day and activity-based recommendations  
 
 ## 🛠️ Tech Stack
 
@@ -242,9 +300,16 @@ const response = await fetch('/api/recommend', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    listeningHistory: ['4iV5W9uYEdYUVa79Axb7Rh', '3n3Ppam7vgaVa1iaRUmn9T'],
+    selectedTracks: [
+      {
+        id: '4iV5W9uYEdYUVa79Axb7Rh',
+        name: 'Song Name',
+        artists: [{ name: 'Artist Name' }],
+        album: { name: 'Album Name' },
+        popularity: 80
+      }
+    ],
     preferences: {
-      preferredGenres: ['pop', 'indie', 'rock'],
       mood: 'happy'
     },
     context: {
@@ -258,18 +323,44 @@ const data = await response.json();
 console.log(data.recommendations);
 ```
 
+### Search for Tracks
+```javascript
+const searchResponse = await fetch('/api/search', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    query: 'The Beatles'
+  })
+});
+
+const searchData = await searchResponse.json();
+console.log(searchData.tracks);
+```
+
 ### Test the API
 ```bash
-# Test with multiple genres
+# Test recommendations with selected tracks
 curl -X POST http://localhost:3000/api/recommend \
   -H "Content-Type: application/json" \
   -d '{
-    "listeningHistory": ["4iV5W9uYEdYUVa79Axb7Rh"],
+    "selectedTracks": [
+      {
+        "id": "4iV5W9uYEdYUVa79Axb7Rh",
+        "name": "Song Name",
+        "artists": [{"name": "Artist Name"}],
+        "album": {"name": "Album Name"},
+        "popularity": 80
+      }
+    ],
     "preferences": {
-      "preferredGenres": ["pop", "rock", "indie"],
       "mood": "happy"
     }
   }'
+
+# Test search functionality
+curl -X POST http://localhost:3000/api/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "The Beatles"}'
 ```
 
 ---
