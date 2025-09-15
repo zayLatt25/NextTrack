@@ -377,20 +377,12 @@ export default function Home() {
                     <div className="font-medium text-gray-900">{track.name}</div>
                     <div className="text-sm text-gray-600">{track.artists[0]?.name}</div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setSelectedTrackId(track.id)}
-                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-                    >
-                      Play
-                    </button>
-                    <button
-                      onClick={() => removeTrackFromCollection(track.id)}
-                      className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-                    >
-                      Remove
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => removeTrackFromCollection(track.id)}
+                    className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                  >
+                    Remove
+                  </button>
                 </div>
               ))}
             </div>
