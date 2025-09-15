@@ -67,7 +67,7 @@ Get music recommendations based on selected reference tracks and preferences.
     }
   ],
   "preferences": {
-    "mood": "happy"
+    "mood": "romantic"
   },
   "context": {
     "timeOfDay": "afternoon",
@@ -159,7 +159,7 @@ Get API information and usage examples.
       }
     ],
     "preferences": {
-      "mood": "happy"
+      "mood": "romantic"
     },
     "context": {
       "timeOfDay": "afternoon",
@@ -272,6 +272,7 @@ The system supports mood-based recommendations with predefined mappings:
 - **Sad**: Indie, folk, acoustic, alternative (popularity 20-80)
 - **Energetic**: Rock, electronic, dance, hip-hop, metal (popularity 40-100)
 - **Calm**: Ambient, classical, jazz, acoustic, chill (popularity 10-70)
+- **Romantic**: R&B, soul, jazz, acoustic, indie, pop, folk (popularity 30-90)
 
 ## 🏆 Project Requirements
 
@@ -310,7 +311,7 @@ const response = await fetch('/api/recommend', {
       }
     ],
     preferences: {
-      mood: 'happy'
+      mood: 'romantic'
     },
     context: {
       timeOfDay: 'afternoon',
@@ -353,7 +354,7 @@ curl -X POST http://localhost:3000/api/recommend \
       }
     ],
     "preferences": {
-      "mood": "happy"
+      "mood": "romantic"
     }
   }'
 
