@@ -30,7 +30,6 @@ type SpotifyTrack = {
 };
 
 type UserPreferences = {
-  preferredGenres: string[];
   mood?: string;
 };
 
@@ -111,11 +110,11 @@ function calculateMoodSimilarity(
 
 
 
-function scoreTrack(track: TrackMetadata, prefs: UserPreferences, selectedTracks?: SelectedTrack[]): number {
+function scoreTrack(track: TrackMetadata, prefs: UserPreferences, selectedTracks?: SelectedTrack[], extractedGenres?: string[]): number {
   let score = 0;
 
-  // 1. Genre match scoring (weight 3)
-  if (prefs.preferredGenres?.includes(track.genre)) {
+  // 1. Genre match scoring (weight 3) - using extracted genres
+  if (extractedGenres && extractedGenres.includes(track.genre)) {
     score += 3;
   }
 
@@ -188,6 +187,45 @@ function calculateTitleSimilarity(title1: string, title2: string): number {
   return commonWords.length / Math.max(words1.length, words2.length);
 }
 
+// Extract genres from selected tracks
+async function extractGenresFromTracks(accessToken: string, selectedTracks: SelectedTrack[]): Promise<string[]> {
+  const allGenres = new Set<string>();
+  
+  for (const track of selectedTracks) {
+    try {
+      // Get artist metadata to extract genres
+      const artistId = track.artists[0]?.name; // We'll need to search for the artist ID
+      if (artistId) {
+        // Search for artist to get their ID
+        const artistSearchResponse = await fetch(
+          `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistId)}&type=artist&limit=1`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        
+        if (artistSearchResponse.ok) {
+          const artistSearchData = await artistSearchResponse.json();
+          const artist = artistSearchData.artists?.items?.[0];
+          
+          if (artist?.id) {
+            const artistMetadata = await fetchArtistMetadata(accessToken, artist.id);
+            if (artistMetadata?.genres) {
+              artistMetadata.genres.forEach((genre: string) => allGenres.add(genre));
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(`Failed to extract genres for track ${track.name}:`, error);
+    }
+  }
+  
+  return Array.from(allGenres);
+}
+
 export async function POST(req: Request) {
   const body = await req.json();
   const { 
@@ -196,10 +234,9 @@ export async function POST(req: Request) {
   }: RecommendationRequest = body;
 
   // Validate input
-  if ((!preferences || !Array.isArray(preferences.preferredGenres) || preferences.preferredGenres.length === 0) && 
-      (!selectedTracks || selectedTracks.length === 0)) {
+  if (!selectedTracks || selectedTracks.length === 0) {
     return NextResponse.json(
-      { message: "Either preferred genres or selected tracks are required" },
+      { message: "Selected tracks are required" },
       { status: 400 }
     );
   }
@@ -210,46 +247,42 @@ export async function POST(req: Request) {
   try {
     const accessToken = await getSpotifyAccessToken(clientId, clientSecret);
 
+    // Extract genres from selected tracks
+    console.log('Extracting genres from selected tracks:', selectedTracks.length);
+    const extractedGenres = await extractGenresFromTracks(accessToken, selectedTracks);
+    console.log('Extracted genres:', extractedGenres);
+
     let searchQueries: string[] = [];
     let allTracks: SpotifyTrack[] = [];
     
-    if (selectedTracks && selectedTracks.length > 0) {
-      // Use selected tracks to find similar music
-      console.log('Using track-based search with selected tracks:', selectedTracks.length);
-      
-      // Create search queries based on selected tracks
-      const trackQueries = selectedTracks.map(track => 
-        `${track.name} ${track.artists[0]?.name}`
-      ).slice(0, 3);
-      
-      // Add genre queries if available
-      const genreQueries = preferences.preferredGenres?.slice(0, 2) || [];
-      
-      searchQueries = [...trackQueries, ...genreQueries];
-      
-      console.log('Search queries based on selected tracks:', searchQueries);
-    } else {
-      // Fallback to genre-based search
-      searchQueries = preferences.preferredGenres.slice(0, 3);
-      console.log('Using genre-based search:', searchQueries);
-    }
+    // Create search queries based on selected tracks and extracted genres
+    const trackQueries = selectedTracks.map(track => 
+      `${track.name} ${track.artists[0]?.name}`
+    ).slice(0, 3);
     
-    // Fetch tracks from multiple queries
-    const trackPromises = searchQueries.map(async (query, index) => {
-      try {
-        console.log(`Fetching tracks for query ${index + 1}: "${query}"`);
-        const tracks = await fetchSpotifyTracks(accessToken, query);
-        console.log(`Found ${tracks.length} tracks for query: "${query}"`);
-        return tracks;
-      } catch (error) {
-        console.warn(`Failed to fetch tracks for query "${query}":`, error);
-        return [];
-      }
-    });
+    // Add extracted genre queries
+    const genreQueries = extractedGenres.slice(0, 3);
     
-    const trackResults = await Promise.all(trackPromises);
-    allTracks = trackResults.flat();
-    console.log(`Total tracks found from all queries: ${allTracks.length}`);
+    searchQueries = [...trackQueries, ...genreQueries];
+    
+    console.log('Search queries based on selected tracks and extracted genres:', searchQueries);
+      
+      // Fetch tracks from multiple queries
+      const trackPromises = searchQueries.map(async (query, index) => {
+        try {
+          console.log(`Fetching tracks for query ${index + 1}: "${query}"`);
+          const tracks = await fetchSpotifyTracks(accessToken, query);
+          console.log(`Found ${tracks.length} tracks for query: "${query}"`);
+          return tracks;
+        } catch (error) {
+          console.warn(`Failed to fetch tracks for query "${query}":`, error);
+          return [];
+        }
+      });
+      
+      const trackResults = await Promise.all(trackPromises);
+      allTracks = trackResults.flat();
+      console.log(`Total tracks found from all queries: ${allTracks.length}`);
 
     // Remove duplicate tracks based on ID
     const uniqueTracks = allTracks.filter((track, index, self) => 
@@ -273,13 +306,13 @@ export async function POST(req: Request) {
             album: track.album?.name,
           };
 
-          const score = scoreTrack(trackMetadata, preferences, selectedTracks);
+          const score = scoreTrack(trackMetadata, preferences, selectedTracks, extractedGenres);
           
           // Debug logging for first few tracks
           if (uniqueTracks.indexOf(track) < 3) {
             console.log(`Scoring track: "${trackMetadata.title}" by ${trackMetadata.artist}`);
             console.log(`  Genre: ${trackMetadata.genre}, Score: ${score}`);
-            console.log(`  User preferred genres: ${preferences.preferredGenres?.join(', ') || 'none'}`);
+            console.log(`  Extracted genres: ${extractedGenres?.join(', ') || 'none'}`);
             console.log(`  User mood: ${preferences.mood || 'none'}`);
           }
 
@@ -300,7 +333,7 @@ export async function POST(req: Request) {
             album: track.album?.name,
           };
 
-          const score = scoreTrack(trackMetadata, preferences, selectedTracks);
+          const score = scoreTrack(trackMetadata, preferences, selectedTracks, extractedGenres);
 
           return {
             track: trackMetadata,
@@ -324,7 +357,7 @@ export async function POST(req: Request) {
 
     // Sort recommendations by score in descending order
     uniqueRecommendations.sort((a, b) => b.score - a.score);
-
+    
     // Calculate evaluation metrics
     const evaluationMetrics = {
       genreCoherence: calculateGenreCoherence(uniqueRecommendations),
@@ -336,10 +369,11 @@ export async function POST(req: Request) {
       { 
         recommendations: uniqueRecommendations,
         evaluationMetrics,
-        searchStrategy: selectedTracks && selectedTracks.length > 0 ? 'track-based' : 'genre-based',
+        searchStrategy: 'track-based',
         searchQueries: searchQueries,
         totalTracksFound: uniqueTracks.length,
-        selectedTracksCount: selectedTracks?.length || 0
+        selectedTracksCount: selectedTracks?.length || 0,
+        extractedGenres: extractedGenres
       },
       { status: 200 }
     );
@@ -427,7 +461,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     message: "NextTrack Recommendation API",
     endpoints: {
-      "POST /api/recommend": "Get music recommendations based on selected tracks and genre preferences",
+      "POST /api/recommend": "Get music recommendations based on selected tracks (genres auto-extracted)",
       "GET /api/recommend?action=evaluate": "Get evaluation metrics and test data"
     },
     example: {
@@ -441,7 +475,6 @@ export async function GET(req: Request) {
         }
       ],
       preferences: {
-        preferredGenres: ["pop", "rock"],
         mood: "happy"
       },
       context: {

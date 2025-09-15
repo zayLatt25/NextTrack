@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import preferences from "@/data/preferences.json";
 
 // TypeScript interfaces for type safety
 interface TrackMetadata {
@@ -39,7 +38,6 @@ interface APIResponse {
 
 export default function Home() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [preferredGenres, setPreferredGenres] = useState<string[]>([]);
   const [mood, setMood] = useState<string | undefined>();
   const [timeOfDay, setTimeOfDay] = useState<string | undefined>();
   const [activity, setActivity] = useState<string | undefined>();
@@ -67,9 +65,17 @@ export default function Home() {
     external_urls: { spotify: string };
   }>>([]);
 
+  // Available moods for the dropdown
+  const availableMoods = [
+    "happy",
+    "sad", 
+    "energetic",
+    "calm"
+  ];
+
   const getRecommendations = async () => {
-    if (preferredGenres.length === 0 && selectedTracks.length === 0) {
-      setErrorMessage("Please select at least one genre or add some tracks for recommendations.");
+    if (selectedTracks.length === 0) {
+      setErrorMessage("Please add some tracks for recommendations.");
       return;
     }
 
@@ -90,7 +96,6 @@ export default function Home() {
             popularity: track.popularity
           })),
           preferences: {
-            preferredGenres: preferredGenres,
             mood: mood || undefined,
           },
           context: {
@@ -206,50 +211,6 @@ export default function Home() {
           </div>
           <div className="mb-4">
             <label className="block text-md font-medium text-gray-900">
-              Preferred Genres
-            </label>
-            <div className="mt-1">
-              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border border-gray-300 rounded p-2 bg-white">
-                {preferences.genres.map((genre) => (
-                  <label key={genre} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                    <input
-                      type="checkbox"
-                      value={genre}
-                      checked={preferredGenres.includes(genre)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setPreferredGenres([...preferredGenres, genre]);
-                        } else {
-                          setPreferredGenres(preferredGenres.filter(g => g !== genre));
-                        }
-                      }}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-900">{genre}</span>
-                  </label>
-                ))}
-              </div>
-              {preferredGenres.length > 0 && (
-                <div className="mt-2 flex items-center justify-between">
-                  <div>
-                    <span className="text-sm text-gray-600">Selected: </span>
-                    <span className="text-sm text-blue-600 font-medium">
-                      {preferredGenres.join(', ')}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setPreferredGenres([])}
-                    className="text-xs text-red-600 hover:text-red-800 underline"
-                  >
-                    Clear All
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="mb-4">
-            <label className="block text-md font-medium text-gray-900">
               Mood
             </label>
             <select
@@ -257,7 +218,7 @@ export default function Home() {
               onChange={(e) => setMood(e.target.value || undefined)}
             >
               <option value="">Select a mood</option>
-              {preferences.moods.map((mood) => (
+              {availableMoods.map((mood) => (
                 <option key={mood} value={mood}>
                   {mood}
                 </option>
