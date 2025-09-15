@@ -20,20 +20,16 @@ interface Recommendation {
 
 interface APIResponse {
   recommendations: Recommendation[];
-  sequenceAnalysis?: {
-    genreTransitions: Record<string, number>;
-    artistTransitions: Record<string, number>;
-    popularityTrend: number[];
-    releaseYearTrend: number[];
-    artistDiversity: number;
-  };
   evaluationMetrics?: {
     genreCoherence: number;
     popularitySmoothness: number;
     genreConsistency: number;
   };
-  totalTracksAnalyzed: number;
   searchStrategy: string;
+  searchQueries: string[];
+  totalTracksFound: number;
+  selectedTracksCount: number;
+  extractedGenres: string[];
 }
 
 export default function Home() {
@@ -116,9 +112,9 @@ export default function Home() {
       // Log additional data for debugging
       console.log('API Response:', {
         searchStrategy: data.searchStrategy,
-        totalTracksAnalyzed: data.totalTracksAnalyzed,
+        totalTracksFound: data.totalTracksFound,
         evaluationMetrics: data.evaluationMetrics,
-        sequenceAnalysis: data.sequenceAnalysis
+        extractedGenres: data.extractedGenres
       });
 
       // Clear the selected track ID when new recommendations are fetched
