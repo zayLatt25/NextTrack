@@ -41,17 +41,35 @@ export default function Home() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [preferredGenres, setPreferredGenres] = useState<string[]>([]);
   const [mood, setMood] = useState<string | undefined>();
-  const [currentTrack, setCurrentTrack] = useState<string | undefined>();
-  const [listeningHistory, setListeningHistory] = useState<string>(""); // New: listening history input
   const [timeOfDay, setTimeOfDay] = useState<string | undefined>();
   const [activity, setActivity] = useState<string | undefined>();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null); // Track ID for the player
   const [loading, setLoading] = useState<boolean>(false); // Loading state for the button
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<Array<{
+    id: string;
+    name: string;
+    artists: Array<{ name: string }>;
+    album: { name: string };
+    popularity: number;
+    preview_url?: string;
+    external_urls: { spotify: string };
+  }>>([]);
+  const [searchLoading, setSearchLoading] = useState<boolean>(false);
+  const [selectedTracks, setSelectedTracks] = useState<Array<{
+    id: string;
+    name: string;
+    artists: Array<{ name: string }>;
+    album: { name: string };
+    popularity: number;
+    preview_url?: string;
+    external_urls: { spotify: string };
+  }>>([]);
 
   const getRecommendations = async () => {
-    if (preferredGenres.length === 0) {
-      setErrorMessage("Please select at least one genre.");
+    if (preferredGenres.length === 0 && selectedTracks.length === 0) {
+      setErrorMessage("Please select at least one genre or add some tracks for recommendations.");
       return;
     }
 
@@ -60,20 +78,20 @@ export default function Home() {
     setLoading(true); // Set loading state to true
 
     try {
-      // Parse listening history from comma-separated string
-      const historyArray = listeningHistory 
-        ? listeningHistory.split(',').map(id => id.trim()).filter(id => id.length > 0)
-        : [];
-
       const res = await fetch("/api/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          listeningHistory: historyArray,
+          selectedTracks: selectedTracks.map(track => ({
+            id: track.id,
+            name: track.name,
+            artists: track.artists,
+            album: track.album,
+            popularity: track.popularity
+          })),
           preferences: {
             preferredGenres: preferredGenres,
             mood: mood || undefined,
-            currentTrack: currentTrack || undefined,
           },
           context: {
             timeOfDay: timeOfDay || undefined,
@@ -108,6 +126,51 @@ export default function Home() {
     }
   };
 
+  const searchTracks = async () => {
+    if (!searchQuery.trim()) {
+      setErrorMessage("Please enter a search query.");
+      return;
+    }
+
+    setSearchLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: searchQuery }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || `Error: ${res.status} - ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      setSearchResults(data.tracks);
+    } catch (error) {
+      console.error("Failed to search tracks:", error);
+      setErrorMessage(error instanceof Error ? error.message : "An error occurred");
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const addTrackToCollection = (track: typeof searchResults[0]) => {
+    if (!selectedTracks.find(t => t.id === track.id)) {
+      setSelectedTracks([...selectedTracks, track]);
+    }
+  };
+
+  const removeTrackFromCollection = (trackId: string) => {
+    setSelectedTracks(selectedTracks.filter(track => track.id !== trackId));
+  };
+
+  const isTrackSelected = (trackId: string) => {
+    return selectedTracks.some(track => track.id === trackId);
+  };
+
   return (
     <div className="min-h-screen p-6 bg-gray-100">
       <h1 className="text-3xl font-extrabold mb-6 text-gray-900 text-center">
@@ -121,14 +184,25 @@ export default function Home() {
           </h2>
           <div className="mb-4">
             <label className="block text-md font-medium text-gray-900">
-              Current Listening Track
+              Search for Tracks
             </label>
-            <input
-              type="text"
-              placeholder="Enter track name"
-              className="mt-1 block w-full p-2 border border-gray-300 rounded bg-white text-gray-900"
-              onChange={(e) => setCurrentTrack(e.target.value || undefined)}
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Search for songs, artists, or albums..."
+                className="flex-1 p-2 border border-gray-300 rounded bg-white text-gray-900"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && searchTracks()}
+              />
+              <button
+                onClick={searchTracks}
+                disabled={searchLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {searchLoading ? "..." : "Search"}
+              </button>
+            </div>
           </div>
           <div className="mb-4">
             <label className="block text-md font-medium text-gray-900">
@@ -220,21 +294,6 @@ export default function Home() {
               <option value="relax">Relax</option>
             </select>
           </div>
-          <div className="mb-4">
-            <label className="block text-md font-medium text-gray-900">
-              Listening History (Track IDs)
-            </label>
-            <input
-              type="text"
-              className="mt-1 block w-full p-2 border border-gray-300 rounded bg-white text-gray-900"
-              placeholder="Enter track IDs separated by commas (e.g., 4iV5W9uYEdYUVa79Axb7Rh, 3n3Ppam7vgaVa1iaRUmn9T)"
-              value={listeningHistory}
-              onChange={(e) => setListeningHistory(e.target.value)}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Optional: Enter Spotify track IDs to get sequence-based recommendations
-            </p>
-          </div>
           {errorMessage && (
             <div className="text-red-600 text-sm mb-4">{errorMessage}</div>
           )}
@@ -269,6 +328,82 @@ export default function Home() {
             )}
           </button>
         </div>
+
+        {/* Search Results */}
+        {searchResults.length > 0 && (
+          <div className="p-4 bg-white rounded shadow-lg">
+            <h2 className="text-xl font-bold mb-4 text-gray-900">
+              Search Results
+            </h2>
+            <div className="max-h-64 overflow-y-auto space-y-2">
+              {searchResults.map((track) => (
+                <div
+                  key={track.id}
+                  className="flex items-center justify-between p-2 border border-gray-200 rounded hover:bg-gray-50"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">{track.name}</div>
+                    <div className="text-sm text-gray-600">{track.artists[0]?.name}</div>
+                  </div>
+                  <button
+                    onClick={() => isTrackSelected(track.id) ? removeTrackFromCollection(track.id) : addTrackToCollection(track)}
+                    className={`px-3 py-1 text-sm rounded ${
+                      isTrackSelected(track.id) 
+                        ? 'bg-red-600 text-white hover:bg-red-700' 
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                    }`}
+                  >
+                    {isTrackSelected(track.id) ? 'Remove' : 'Add'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Selected Tracks for Recommendations */}
+        {selectedTracks.length > 0 && (
+          <div className="p-4 bg-white rounded shadow-lg">
+            <h2 className="text-xl font-bold mb-4 text-gray-900">
+              Selected Tracks for Recommendations ({selectedTracks.length})
+            </h2>
+            <div className="max-h-64 overflow-y-auto space-y-2">
+              {selectedTracks.map((track) => (
+                <div
+                  key={track.id}
+                  className="flex items-center justify-between p-2 border border-gray-200 rounded hover:bg-gray-50"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">{track.name}</div>
+                    <div className="text-sm text-gray-600">{track.artists[0]?.name}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSelectedTrackId(track.id)}
+                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                    >
+                      Play
+                    </button>
+                    <button
+                      onClick={() => removeTrackFromCollection(track.id)}
+                      className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => setSelectedTracks([])}
+                className="px-4 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Spotify Player */}
         {selectedTrackId && (
