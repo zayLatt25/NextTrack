@@ -72,6 +72,10 @@ function getMoodPreferences(mood: string): {
       preferredGenres: ["ambient", "classical", "jazz", "acoustic", "chill"],
       popularityRange: [10, 70],
     },
+    romantic: {
+      preferredGenres: ["r&b", "soul", "jazz", "acoustic", "indie", "pop", "folk"],
+      popularityRange: [30, 90],
+    },
   };
 
   return (
@@ -120,27 +124,27 @@ function scoreTrack(
 ): number {
   let score = 0;
 
-  // 1. Genre match scoring (weight 3)
-  if (
-    track.genre !== "Unknown Genre" &&
-    extractedGenres?.some((g) =>
-      track.genre.toLowerCase().includes(g.toLowerCase())
-    )
-  ) {
+  // 1. Genre match scoring (weight 3) - using extracted genres
+  if (extractedGenres && extractedGenres.includes(track.genre)) {
     score += 3;
   }
 
-  // 2. Selected tracks similarity scoring (weight 4)
+  // 2. Selected tracks similarity scoring (CAPPED at 2)
   if (selectedTracks && selectedTracks.length > 0) {
     const trackSimilarity = calculateTrackSimilarity(track, selectedTracks);
-    score += trackSimilarity * 4;
+    score += Math.min(trackSimilarity * 2, 2); // cap contribution
   }
 
-  // 3. Mood-based metadata scoring (weight 3)
+  // 3. Mood-based metadata scoring (weight 3 + override)
   if (prefs.mood) {
     const moodPreferences = getMoodPreferences(prefs.mood);
     const moodSimilarity = calculateMoodSimilarity(track, moodPreferences);
-    score += moodSimilarity * 3;
+
+    if (moodSimilarity < 0.2) {
+      score -= 1.5; // penalty for failing mood
+    } else {
+      score += moodSimilarity * 3;
+    }
   }
 
   // 4. Context-based scoring (weight 2)
@@ -154,8 +158,9 @@ function scoreTrack(
     score += 1;
   }
 
-  return Math.round(score * 100) / 100;
+  return Math.round(score * 100) / 100; // Round to 2 decimals
 }
+
 
 function calculateTrackSimilarity(
   track: TrackMetadata,
@@ -407,12 +412,21 @@ export async function POST(req: Request) {
     let searchQueries: string[] = [];
     let allTracks: SpotifyTrack[] = [];
 
-    const trackQueries = selectedTracks
-      .map((track) => `${track.name} ${track.artists[0]?.name}`)
-      .slice(0, 3);
+    // Create search queries based on selected tracks and extracted genres
+    const trackQueries = selectedTracks.map(track =>
+      `${track.name} ${track.artists[0]?.name}`
+    ).slice(0, 3);
 
     const genreQueries = extractedGenres.slice(0, 3);
-    searchQueries = [...trackQueries, ...genreQueries];
+
+    // Add mood-preferred genre queries
+    let moodGenreQueries: string[] = [];
+    if (preferences.mood) {
+      const moodPrefs = getMoodPreferences(preferences.mood);
+      moodGenreQueries = moodPrefs.preferredGenres.slice(0, 2); // limit to 2
+    }
+
+    searchQueries = [...trackQueries, ...genreQueries, ...moodGenreQueries];
 
     // Fetch tracks for all queries
     const trackPromises = searchQueries.map(async (query) => {
@@ -499,9 +513,8 @@ export async function POST(req: Request) {
         index ===
         self.findIndex(
           (r) =>
-            r.track.title === rec.track.title &&
-            r.track.artist === rec.track.artist &&
-            r.track.genre === rec.track.genre
+            r.track.title.toLowerCase() === rec.track.title.toLowerCase() &&
+            r.track.artist.toLowerCase() === rec.track.artist.toLowerCase()
         )
     );
 
