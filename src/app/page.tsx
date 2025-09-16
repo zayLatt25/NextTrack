@@ -122,12 +122,12 @@ export default function Home() {
           errorMessage={errorMessage}
         />
 
-        {/* right side - Now Playing and Recommendations */}
+        {/* right side - now playing and recommendations */}
         <div className="flex flex-col h-[700px] space-y-6">
-          {/* now Playing Component */}
+          {/* now playing component */}
           <NowPlaying selectedTrackId={selectedTrackId} />
 
-          {/* Recommendations Component */}
+          {/* recommendations component */}
           <Recommendations
             recommendations={recommendations}
             loading={loading}
