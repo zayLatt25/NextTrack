@@ -177,13 +177,13 @@ export default function Home() {
   return (
     <div className="min-h-screen p-6 bg-gray-100">
       <h1 className="text-3xl font-extrabold mb-6 text-gray-900 text-center">
-        Track Recommendations
+        NextTrack
       </h1>
       
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Recommendation Form */}
-        <div className="p-4 bg-white rounded shadow-lg">
+        <div className="p-6 bg-white rounded shadow-lg min-h-[700px]">
           <h2 className="text-xl font-bold mb-4 text-gray-900">
             Set Preferences
           </h2>
