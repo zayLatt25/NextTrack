@@ -519,7 +519,7 @@ export async function POST(req: Request) {
     filteredRecommendations.sort((a, b) => b.score - a.score);
 
     // Limit recommendations to maximum of 15
-    const limitedRecommendations = filteredRecommendations.slice(0, 15);
+    const limitedRecommendations = filteredRecommendations.slice(0, 20);
 
     const evaluationMetrics = calculateEvaluationMetrics(
       limitedRecommendations
