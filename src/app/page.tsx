@@ -183,12 +183,12 @@ export default function Home() {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
         {/* Recommendation Form */}
-        <div className="p-4 bg-white rounded-xl shadow-lg border border-gray-100 flex flex-col h-full">
+        <div className="p-4 bg-white rounded-xl shadow-lg border border-gray-100 flex flex-col h-[700px]">
           <h2 className="text-xl font-bold mb-4 text-gray-900 flex items-center flex-shrink-0">
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Set Preferences</span>
           </h2>
           
-          {/* Search Section */}
+          {/* Search Section - Always at the top */}
           <div className="mb-4 flex-shrink-0">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Search for Tracks
@@ -219,61 +219,23 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Search Results and Selected Tracks - Side by Side */}
+          {/* Search Results and Selected Tracks - Flexible middle section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6 flex-1 min-h-0">
             {/* Search Results */}
-            <div className="flex flex-col">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Search Results</h3>
-              {searchLoading ? (
-                <div className="h-40 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
-                  <div className="space-y-2">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <TrackSkeleton key={index} />
-                    ))}
-                  </div>
-                </div>
-              ) : searchResults.length > 0 ? (
-                <div className="h-40 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
-                  {searchResults.map((track) => (
-                    <div
-                      key={track.id}
-                      className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 truncate">{track.name}</div>
-                        <div className="text-sm text-gray-600 truncate">{track.artists[0]?.name}</div>
-                      </div>
-                      <button
-                        onClick={() => isTrackSelected(track.id) ? removeTrackFromCollection(track.id) : addTrackToCollection(track)}
-                        className={`px-3 py-2 text-xs rounded-lg font-medium transition-all duration-200 flex-shrink-0 ${
-                          isTrackSelected(track.id) 
-                            ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200' 
-                            : 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200'
-                        }`}
-                      >
-                        {isTrackSelected(track.id) ? 'Remove' : 'Add'}
-                      </button>
+            <div className="flex flex-col min-h-0">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2 flex-shrink-0">Search Results</h3>
+              <div className="flex-1 min-h-0">
+                {searchLoading ? (
+                  <div className="h-full overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
+                    <div className="space-y-2">
+                      {Array.from({ length: 4 }).map((_, index) => (
+                        <TrackSkeleton key={index} />
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="h-40 flex items-center justify-center bg-gray-50 rounded-lg">
-                  <EmptyState
-                    icon="🔍"
-                    title="No search results"
-                    description="Search for tracks to see results here"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Selected Tracks */}
-            <div className="flex flex-col">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Selected Tracks ({selectedTracks.length})</h3>
-              <div className="h-40 bg-gray-50 rounded-lg">
-                {selectedTracks.length > 0 ? (
-                  <div className="h-full overflow-y-auto space-y-2 p-3">
-                    {selectedTracks.map((track) => (
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <div className="h-full overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
+                    {searchResults.map((track) => (
                       <div
                         key={track.id}
                         className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200"
@@ -283,37 +245,79 @@ export default function Home() {
                           <div className="text-sm text-gray-600 truncate">{track.artists[0]?.name}</div>
                         </div>
                         <button
-                          onClick={() => removeTrackFromCollection(track.id)}
-                          className="px-3 py-2 bg-red-100 text-red-700 text-xs rounded-lg hover:bg-red-200 font-medium transition-all duration-200 flex-shrink-0"
+                          onClick={() => isTrackSelected(track.id) ? removeTrackFromCollection(track.id) : addTrackToCollection(track)}
+                          className={`px-3 py-2 text-xs rounded-lg font-medium transition-all duration-200 flex-shrink-0 ${
+                            isTrackSelected(track.id) 
+                              ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200' 
+                              : 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200'
+                          }`}
                         >
-                          Remove
+                          {isTrackSelected(track.id) ? 'Remove' : 'Add'}
                         </button>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="h-full flex items-center justify-center">
+                  <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
                     <EmptyState
-                      icon="🎵"
-                      title="No tracks selected"
-                      description="Add tracks from search results to build your collection"
+                      icon="🔍"
+                      title="No search results"
+                      description="Search for tracks to see results here"
                     />
                   </div>
                 )}
               </div>
-              <div className="mt-2 h-8 flex items-center">
-                <button
-                  onClick={() => setSelectedTracks([])}
-                  disabled={selectedTracks.length === 0}
-                  className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Clear All
-                </button>
+            </div>
+
+            {/* Selected Tracks */}
+            <div className="flex flex-col min-h-0">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2 flex-shrink-0">Selected Tracks ({selectedTracks.length})</h3>
+              <div className="flex-1 min-h-0 flex flex-col">
+                <div className="flex-1 min-h-0 bg-gray-50 rounded-lg">
+                  {selectedTracks.length > 0 ? (
+                    <div className="h-full overflow-y-auto space-y-2 p-3">
+                      {selectedTracks.map((track) => (
+                        <div
+                          key={track.id}
+                          className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 truncate">{track.name}</div>
+                            <div className="text-sm text-gray-600 truncate">{track.artists[0]?.name}</div>
+                          </div>
+                          <button
+                            onClick={() => removeTrackFromCollection(track.id)}
+                            className="px-3 py-2 bg-red-100 text-red-700 text-xs rounded-lg hover:bg-red-200 font-medium transition-all duration-200 flex-shrink-0"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <EmptyState
+                        icon="🎵"
+                        title="No tracks selected"
+                        description="Add tracks from search results to build your collection"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="mt-2 h-8 flex items-center flex-shrink-0">
+                  <button
+                    onClick={() => setSelectedTracks([])}
+                    disabled={selectedTracks.length === 0}
+                    className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Clear All
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Preferences */}
+          {/* Preferences - Always at the bottom */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4 flex-shrink-0">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Mood</label>
@@ -359,11 +363,11 @@ export default function Home() {
             <div className="mb-3 p-2 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex-shrink-0">{errorMessage}</div>
           )}
           
-          {/* Get Recommendations Button - moved to bottom */}
-          <div className="mt-auto">
+          {/* Get Recommendations Button - Always at the bottom */}
+          <div className="flex-shrink-0">
             <button
               onClick={getRecommendations}
-              className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 flex items-center justify-center font-semibold text-base transition-all duration-200 shadow-lg hover:shadow-xl flex-shrink-0"
+              className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 flex items-center justify-center font-semibold text-base transition-all duration-200 shadow-lg hover:shadow-xl"
               disabled={loading}
             >
               {loading ? (
@@ -379,7 +383,7 @@ export default function Home() {
         </div>
 
         {/* Right Side - Now Playing and Recommendations */}
-        <div className="flex flex-col h-full space-y-4">
+        <div className="flex flex-col h-[700px] space-y-4">
           {/* Now Playing */}
           <div className="p-4 bg-white rounded-xl shadow-lg border border-gray-100 flex-shrink-0">
             <h2 className="text-xl font-bold mb-4 text-gray-900 text-center flex items-center justify-center">
@@ -406,11 +410,11 @@ export default function Home() {
           </div>
 
           {/* Recommendations */}
-          <div className="p-4 bg-white rounded-xl shadow-lg border border-gray-100 flex-1 flex flex-col">
+          <div className="p-4 bg-white rounded-xl shadow-lg border border-gray-100 flex-1 flex flex-col min-h-0">
             <h2 className="text-xl font-bold mb-4 text-gray-900 text-center flex items-center justify-center flex-shrink-0">
               <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Recommendations</span>
             </h2>
-            <div className="grid grid-cols-1 gap-2 flex-1 overflow-y-auto">
+            <div className="grid grid-cols-1 gap-2 flex-1 overflow-y-auto min-h-0">
               {loading ? (
                 Array.from({ length: 3 }).map((_, index) => (
                   <RecommendationSkeleton key={index} />
