@@ -183,7 +183,7 @@ export default function Home() {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Recommendation Form */}
-        <div className="p-6 bg-white rounded-xl shadow-lg min-h-[700px] border border-gray-100">
+        <div className="p-6 bg-white rounded-xl shadow-lg min-h-[400px] border border-gray-100">
           <h2 className="text-2xl font-bold mb-6 text-gray-900 flex items-center">
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Set Preferences</span>
           </h2>
@@ -222,7 +222,7 @@ export default function Home() {
           {/* Search Results */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-3">Search Results</h3>
-            <div className="max-h-48 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
+            <div className="max-h-32 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
               {searchLoading ? (
                 <div className="space-y-2">
                   {Array.from({ length: 3 }).map((_, index) => (
@@ -264,7 +264,7 @@ export default function Home() {
           {/* Selected Tracks */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-3">Selected Tracks ({selectedTracks.length})</h3>
-            <div className="max-h-48 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
+            <div className="max-h-32 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
               {selectedTracks.length > 0 ? (
                 selectedTracks.map((track) => (
                   <div
