@@ -188,7 +188,7 @@ export default function Home() {
             <span className="gradient-text">Set Preferences</span>
           </h2>
           
-          {/* Search Section - Always at the top */}
+          {/* Search Section */}
           <div className="mb-6 flex-shrink-0">
             <label className="block text-sm font-semibold text-white/90 mb-3">
               Search for Tracks
@@ -219,7 +219,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Search Results and Selected Tracks - Flexible middle section */}
+          {/* Search Results and Selected Tracks */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 flex-1 min-h-0">
             {/* Search Results */}
             <div className="flex flex-col min-h-0">
@@ -317,7 +317,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Preferences - Always at the bottom */}
+          {/* Preferences */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 flex-shrink-0">
             <div>
               <label className="block text-sm font-semibold text-white/90 mb-3">Mood</label>
@@ -363,7 +363,7 @@ export default function Home() {
             <div className="mb-4 p-4 bg-red-500/10 border border-red-400/30 text-red-300 rounded-xl text-sm flex-shrink-0">{errorMessage}</div>
           )}
           
-          {/* Get Recommendations Button - Always at the bottom */}
+          {/* Get Recommendations Button */}
           <div className="flex-shrink-0">
             <button
               onClick={getRecommendations}
