@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import EmptyState from "../components/EmptyState";
+import { TrackSkeleton, RecommendationSkeleton } from "../components/SkeletonLoader";
 
 // TypeScript interfaces for type safety
 interface TrackMetadata {
@@ -177,6 +179,8 @@ export default function Home() {
       <h1 className="text-3xl font-extrabold mb-6 text-gray-900 text-center">
         Track Recommendations
       </h1>
+      
+      {/* Main Content Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Recommendation Form */}
         <div className="p-4 bg-white rounded shadow-lg">
@@ -257,7 +261,7 @@ export default function Home() {
           <button
             onClick={getRecommendations}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full flex items-center justify-center"
-            disabled={loading} // Disable button while loading
+            disabled={loading}
           >
             {loading ? (
               <svg
@@ -287,13 +291,19 @@ export default function Home() {
         </div>
 
         {/* Search Results */}
-        {searchResults.length > 0 && (
-          <div className="p-4 bg-white rounded shadow-lg">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">
-              Search Results
-            </h2>
-            <div className="max-h-64 overflow-y-auto space-y-2">
-              {searchResults.map((track) => (
+        <div className="p-4 bg-white rounded shadow-lg">
+          <h2 className="text-xl font-bold mb-4 text-gray-900">
+            Search Results
+          </h2>
+          <div className="max-h-64 overflow-y-auto space-y-2">
+            {searchLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <TrackSkeleton key={index} />
+                ))}
+              </div>
+            ) : searchResults.length > 0 ? (
+              searchResults.map((track) => (
                 <div
                   key={track.id}
                   className="flex items-center justify-between p-2 border border-gray-200 rounded hover:bg-gray-50"
@@ -313,19 +323,28 @@ export default function Home() {
                     {isTrackSelected(track.id) ? 'Remove' : 'Add'}
                   </button>
                 </div>
-              ))}
-            </div>
+              ))
+            ) : (
+              <EmptyState
+                icon="🔍"
+                title="No search results"
+                description="Search for tracks to see results here"
+              />
+            )}
           </div>
-        )}
+        </div>
+      </div>
 
-        {/* Selected Tracks for Recommendations */}
-        {selectedTracks.length > 0 && (
-          <div className="p-4 bg-white rounded shadow-lg">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">
-              Selected Tracks for Recommendations ({selectedTracks.length})
-            </h2>
-            <div className="max-h-64 overflow-y-auto space-y-2">
-              {selectedTracks.map((track) => (
+      {/* Second Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        {/* Selected Tracks */}
+        <div className="p-4 bg-white rounded shadow-lg">
+          <h2 className="text-xl font-bold mb-4 text-gray-900">
+            Selected Tracks for Recommendations ({selectedTracks.length})
+          </h2>
+          <div className="max-h-64 overflow-y-auto space-y-2">
+            {selectedTracks.length > 0 ? (
+              selectedTracks.map((track) => (
                 <div
                   key={track.id}
                   className="flex items-center justify-between p-2 border border-gray-200 rounded hover:bg-gray-50"
@@ -341,8 +360,16 @@ export default function Home() {
                     Remove
                   </button>
                 </div>
-              ))}
-            </div>
+              ))
+            ) : (
+              <EmptyState
+                icon="🎵"
+                title="No tracks selected"
+                description="Add tracks from search results to build your collection"
+              />
+            )}
+          </div>
+          {selectedTracks.length > 0 && (
             <div className="mt-4 flex gap-2">
               <button
                 onClick={() => setSelectedTracks([])}
@@ -351,15 +378,15 @@ export default function Home() {
                 Clear All
               </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Spotify Player */}
-        {selectedTrackId && (
-          <div className="p-4 bg-white rounded shadow-lg">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 text-center">
-              Now Playing
-            </h2>
+        <div className="p-4 bg-white rounded shadow-lg">
+          <h2 className="text-xl font-bold mb-4 text-gray-900 text-center">
+            Now Playing
+          </h2>
+          {selectedTrackId ? (
             <iframe
               style={{ borderRadius: "12px" }}
               src={`https://open.spotify.com/embed/track/${selectedTrackId}?autoplay=true`}
@@ -368,47 +395,73 @@ export default function Home() {
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
               loading="lazy"
             ></iframe>
-          </div>
-        )}
+          ) : (
+            <EmptyState
+              icon="🎧"
+              title="No track selected"
+              description="Select a track to play it here"
+            />
+          )}
+        </div>
       </div>
 
       {/* Recommendations */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        {recommendations.map((rec: Recommendation) => (
-          <div
-            key={rec.track?.id || Math.random()} // Use a fallback key if `rec.track.id` is undefined
-            className="p-6 bg-gray-50 rounded shadow-lg flex flex-col space-y-3"
-          >
-            <div
-              className="text-xl font-bold text-gray-800 truncate"
-              style={{
-                overflow: "hidden",
-                whiteSpace: "nowrap",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {rec.track?.title || "Unknown Title"}
+      <div className="mt-6">
+        <h2 className="text-2xl font-bold mb-4 text-gray-900">
+          Recommendations
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {loading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <RecommendationSkeleton key={index} />
+            ))
+          ) : recommendations.length > 0 ? (
+            recommendations.map((rec: Recommendation) => (
+              <div
+                key={rec.track?.id || Math.random()}
+                className="p-6 bg-gray-50 rounded shadow-lg flex flex-col space-y-3"
+              >
+                <div
+                  className="text-xl font-bold text-gray-800 truncate"
+                  style={{
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {rec.track?.title || "Unknown Title"}
+                </div>
+                <div className="text-md text-gray-600">
+                  Artist: {rec.track?.artist || "Unknown Artist"}
+                </div>
+                <div className="text-md text-gray-600">
+                  Genre: {rec.track?.genre || "Unknown Genre"}
+                </div>
+                <div className="text-md font-semibold text-blue-700">
+                  Score: {rec.score || 0}
+                </div>
+                <button
+                  onClick={() => {
+                    console.log("Selected Track ID:", rec.track?.id);
+                    setSelectedTrackId(rec.track?.id);
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  Play Track
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full">
+              <EmptyState
+                icon="🎯"
+                title="No recommendations yet"
+                description="Get personalized recommendations by adding tracks and clicking 'Get Recommendations'"
+                className="py-12"
+              />
             </div>
-            <div className="text-md text-gray-600">
-              Artist: {rec.track?.artist || "Unknown Artist"}
-            </div>
-            <div className="text-md text-gray-600">
-              Genre: {rec.track?.genre || "Unknown Genre"}
-            </div>
-            <div className="text-md font-semibold text-blue-700">
-              Score: {rec.score || 0}
-            </div>
-            <button
-              onClick={() => {
-                console.log("Selected Track ID:", rec.track?.id);
-                setSelectedTrackId(rec.track?.id);
-              }}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              Play Track
-            </button>
-          </div>
-        ))}
+          )}
+        </div>
       </div>
     </div>
   );
