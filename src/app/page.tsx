@@ -175,29 +175,29 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen overflow-hidden p-4 bg-gray-100 flex flex-col">
-      <h1 className="text-2xl font-extrabold mb-4 text-gray-900 text-center flex-shrink-0">
+    <div className="h-screen overflow-hidden p-4 animated-bg flex flex-col">
+      <h1 className="text-4xl font-black mb-6 text-center flex-shrink-0 gradient-text tracking-tight">
         NextTrack
       </h1>
       
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
         {/* Recommendation Form */}
-        <div className="p-4 bg-white rounded-xl shadow-lg border border-gray-100 flex flex-col h-[700px]">
-          <h2 className="text-xl font-bold mb-4 text-gray-900 flex items-center flex-shrink-0">
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Set Preferences</span>
+        <div className="p-6 glass rounded-2xl shadow-2xl border border-white/10 flex flex-col h-[700px]">
+          <h2 className="text-2xl font-bold mb-6 text-white flex items-center flex-shrink-0">
+            <span className="gradient-text">Set Preferences</span>
           </h2>
           
           {/* Search Section - Always at the top */}
-          <div className="mb-4 flex-shrink-0">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <div className="mb-6 flex-shrink-0">
+            <label className="block text-sm font-semibold text-white/90 mb-3">
               Search for Tracks
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <input
                 type="text"
                 placeholder="Search for songs, artists, or albums..."
-                className="flex-1 p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="flex-1 p-4 border border-white/20 rounded-xl bg-white/5 text-white placeholder-white/50 focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-300"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && searchTracks()}
@@ -205,7 +205,7 @@ export default function Home() {
               <button
                 onClick={searchTracks}
                 disabled={searchLoading}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 transition-all duration-200 font-medium"
+                className="px-8 py-4 bg-gradient-to-r from-purple-600 to-cyan-500 text-white rounded-xl hover:from-purple-700 hover:to-cyan-600 disabled:opacity-50 transition-all duration-300 font-semibold shadow-lg hover:shadow-lg"
               >
                 {searchLoading ? (
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
@@ -220,36 +220,36 @@ export default function Home() {
           </div>
 
           {/* Search Results and Selected Tracks - Flexible middle section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6 flex-1 min-h-0">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 flex-1 min-h-0">
             {/* Search Results */}
             <div className="flex flex-col min-h-0">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2 flex-shrink-0">Search Results</h3>
+              <h3 className="text-sm font-semibold text-white/90 mb-3 flex-shrink-0">Search Results</h3>
               <div className="flex-1 min-h-0">
                 {searchLoading ? (
-                  <div className="h-full overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
-                    <div className="space-y-2">
+                  <div className="h-full overflow-y-auto space-y-3 bg-white/5 rounded-xl p-4 backdrop-blur-sm">
+                    <div className="space-y-3">
                       {Array.from({ length: 4 }).map((_, index) => (
                         <TrackSkeleton key={index} />
                       ))}
                     </div>
                   </div>
                 ) : searchResults.length > 0 ? (
-                  <div className="h-full overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
+                  <div className="h-full overflow-y-auto space-y-3 bg-white/5 rounded-xl p-4">
                     {searchResults.map((track) => (
                       <div
                         key={track.id}
-                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200"
+                        className="flex items-center justify-between p-4 bg-white/10 border border-white/20 rounded-xl hover:bg-white/20 hover:shadow-lg transition-all duration-300 group"
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 truncate">{track.name}</div>
-                          <div className="text-sm text-gray-600 truncate">{track.artists[0]?.name}</div>
+                          <div className="font-semibold text-white truncate group-hover:text-purple-300 transition-colors">{track.name}</div>
+                          <div className="text-sm text-white/70 truncate">{track.artists[0]?.name}</div>
                         </div>
                         <button
                           onClick={() => isTrackSelected(track.id) ? removeTrackFromCollection(track.id) : addTrackToCollection(track)}
-                          className={`px-3 py-2 text-xs rounded-lg font-medium transition-all duration-200 flex-shrink-0 ${
+                          className={`px-4 py-2 text-xs rounded-lg font-semibold transition-all duration-300 flex-shrink-0 ${
                             isTrackSelected(track.id) 
-                              ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200' 
-                              : 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200'
+                              ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-400/30' 
+                              : 'bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-400/30'
                           }`}
                         >
                           {isTrackSelected(track.id) ? 'Remove' : 'Add'}
@@ -258,7 +258,7 @@ export default function Home() {
                     ))}
                   </div>
                 ) : (
-                  <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
+                  <div className="h-full flex items-center justify-center bg-white/5 rounded-xl">
                     <EmptyState
                       icon="🔍"
                       title="No search results"
@@ -271,23 +271,23 @@ export default function Home() {
 
             {/* Selected Tracks */}
             <div className="flex flex-col min-h-0">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2 flex-shrink-0">Selected Tracks ({selectedTracks.length})</h3>
+              <h3 className="text-sm font-semibold text-white/90 mb-3 flex-shrink-0">Selected Tracks ({selectedTracks.length})</h3>
               <div className="flex-1 min-h-0 flex flex-col">
-                <div className="flex-1 min-h-0 bg-gray-50 rounded-lg">
+                <div className="flex-1 min-h-0 bg-white/5 rounded-xl">
                   {selectedTracks.length > 0 ? (
-                    <div className="h-full overflow-y-auto space-y-2 p-3">
+                    <div className="h-full overflow-y-auto space-y-3 p-4">
                       {selectedTracks.map((track) => (
                         <div
                           key={track.id}
-                          className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200"
+                          className="flex items-center justify-between p-4 bg-white/10 border border-white/20 rounded-xl hover:bg-white/20 hover:shadow-lg transition-all duration-300 group"
                         >
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 truncate">{track.name}</div>
-                            <div className="text-sm text-gray-600 truncate">{track.artists[0]?.name}</div>
+                            <div className="font-semibold text-white truncate group-hover:text-cyan-300 transition-colors">{track.name}</div>
+                            <div className="text-sm text-white/70 truncate">{track.artists[0]?.name}</div>
                           </div>
                           <button
                             onClick={() => removeTrackFromCollection(track.id)}
-                            className="px-3 py-2 bg-red-100 text-red-700 text-xs rounded-lg hover:bg-red-200 font-medium transition-all duration-200 flex-shrink-0"
+                            className="px-4 py-2 bg-red-500/20 text-red-300 text-xs rounded-lg hover:bg-red-500/30 font-semibold transition-all duration-300 flex-shrink-0 border border-red-400/30"
                           >
                             Remove
                           </button>
@@ -304,11 +304,11 @@ export default function Home() {
                     </div>
                   )}
                 </div>
-                <div className="mt-2 h-8 flex items-center flex-shrink-0">
+                <div className="mt-3 h-8 flex items-center flex-shrink-0">
                   <button
                     onClick={() => setSelectedTracks([])}
                     disabled={selectedTracks.length === 0}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-white/10 text-white/70 text-sm rounded-lg hover:bg-white/20 font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
                   >
                     Clear All
                   </button>
@@ -318,56 +318,56 @@ export default function Home() {
           </div>
 
           {/* Preferences - Always at the bottom */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4 flex-shrink-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 flex-shrink-0">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Mood</label>
+              <label className="block text-sm font-semibold text-white/90 mb-3">Mood</label>
               <select
-                className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="w-full p-4 border border-white/20 rounded-xl bg-white/5 text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-300"
                 onChange={(e) => setMood(e.target.value || undefined)}
               >
-                <option value="">Select mood</option>
+                <option value="" className="bg-gray-800 text-white">Select mood</option>
                 {availableMoods.map((mood) => (
-                  <option key={mood} value={mood} className="capitalize">{mood}</option>
+                  <option key={mood} value={mood} className="capitalize bg-gray-800 text-white">{mood}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Time of Day</label>
+              <label className="block text-sm font-semibold text-white/90 mb-3">Time of Day</label>
               <select
-                className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="w-full p-4 border border-white/20 rounded-xl bg-white/5 text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 transition-all duration-300"
                 onChange={(e) => setTimeOfDay(e.target.value || undefined)}
               >
-                <option value="">Select time</option>
-                <option value="morning">Morning</option>
-                <option value="afternoon">Afternoon</option>
-                <option value="evening">Evening</option>
-                <option value="night">Night</option>
+                <option value="" className="bg-gray-800 text-white">Select time</option>
+                <option value="morning" className="bg-gray-800 text-white">Morning</option>
+                <option value="afternoon" className="bg-gray-800 text-white">Afternoon</option>
+                <option value="evening" className="bg-gray-800 text-white">Evening</option>
+                <option value="night" className="bg-gray-800 text-white">Night</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Activity</label>
+              <label className="block text-sm font-semibold text-white/90 mb-3">Activity</label>
               <select
-                className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="w-full p-4 border border-white/20 rounded-xl bg-white/5 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-400 transition-all duration-300"
                 onChange={(e) => setActivity(e.target.value || undefined)}
               >
-                <option value="">Select activity</option>
-                <option value="workout">Workout</option>
-                <option value="study">Study</option>
-                <option value="party">Party</option>
-                <option value="relax">Relax</option>
+                <option value="" className="bg-gray-800 text-white">Select activity</option>
+                <option value="workout" className="bg-gray-800 text-white">Workout</option>
+                <option value="study" className="bg-gray-800 text-white">Study</option>
+                <option value="party" className="bg-gray-800 text-white">Party</option>
+                <option value="relax" className="bg-gray-800 text-white">Relax</option>
               </select>
             </div>
           </div>
 
           {errorMessage && (
-            <div className="mb-3 p-2 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex-shrink-0">{errorMessage}</div>
+            <div className="mb-4 p-4 bg-red-500/10 border border-red-400/30 text-red-300 rounded-xl text-sm flex-shrink-0">{errorMessage}</div>
           )}
           
           {/* Get Recommendations Button - Always at the bottom */}
           <div className="flex-shrink-0">
             <button
               onClick={getRecommendations}
-              className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 flex items-center justify-center font-semibold text-base transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 via-cyan-500 to-amber-500 text-white rounded-xl hover:from-purple-700 hover:via-cyan-600 hover:to-amber-600 disabled:opacity-50 flex items-center justify-center font-bold text-lg transition-all duration-300 shadow-2xl hover:shadow-2xl"
               disabled={loading}
             >
               {loading ? (
@@ -383,11 +383,11 @@ export default function Home() {
         </div>
 
         {/* Right Side - Now Playing and Recommendations */}
-        <div className="flex flex-col h-[700px] space-y-4">
+        <div className="flex flex-col h-[700px] space-y-6">
           {/* Now Playing */}
-          <div className="p-4 bg-white rounded-xl shadow-lg border border-gray-100 flex-shrink-0">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 text-center flex items-center justify-center">
-              <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Now Playing</span>
+          <div className="p-6 glass rounded-2xl shadow-2xl border border-white/10 flex-shrink-0">
+            <h2 className="text-2xl font-bold mb-6 text-white text-center flex items-center justify-center">
+              <span className="gradient-text">Now Playing</span>
             </h2>
             {selectedTrackId ? (
               <iframe
@@ -399,7 +399,7 @@ export default function Home() {
                 loading="lazy"
               ></iframe>
             ) : (
-              <div className="h-32 flex items-center justify-center">
+              <div className="h-[152px] flex items-center justify-center">
                 <EmptyState
                   icon="🎧"
                   title="No track selected"
@@ -410,11 +410,11 @@ export default function Home() {
           </div>
 
           {/* Recommendations */}
-          <div className="p-4 bg-white rounded-xl shadow-lg border border-gray-100 flex-1 flex flex-col min-h-0">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 text-center flex items-center justify-center flex-shrink-0">
-              <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Recommendations</span>
+          <div className="p-6 glass rounded-2xl shadow-2xl border border-white/10 flex-1 flex flex-col min-h-0">
+            <h2 className="text-2xl font-bold mb-6 text-white text-center flex items-center justify-center flex-shrink-0">
+              <span className="gradient-text">Recommendations</span>
             </h2>
-            <div className="grid grid-cols-1 gap-2 flex-1 overflow-y-auto min-h-0">
+            <div className="grid grid-cols-1 gap-3 flex-1 overflow-y-auto min-h-0">
               {loading ? (
                 Array.from({ length: 3 }).map((_, index) => (
                   <RecommendationSkeleton key={index} />
@@ -423,11 +423,11 @@ export default function Home() {
                 recommendations.map((rec: Recommendation) => (
                   <div
                     key={rec.track?.id || Math.random()}
-                    className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:shadow-md transition-all duration-200 flex items-center justify-between group"
+                    className="p-5 bg-white/10 rounded-xl border border-white/20 hover:bg-white/20 hover:shadow-lg transition-all duration-300 flex items-center justify-between group"
                   >
                     <div className="flex-1 min-w-0">
                       <div
-                        className="font-semibold text-gray-800 truncate group-hover:text-purple-600 transition-colors duration-200"
+                        className="font-bold text-white truncate group-hover:text-purple-300 transition-colors duration-300"
                         style={{
                           overflow: "hidden",
                           whiteSpace: "nowrap",
@@ -436,10 +436,10 @@ export default function Home() {
                       >
                         {rec.track?.title || "Unknown Title"}
                       </div>
-                      <div className="text-sm text-gray-600 truncate">
+                      <div className="text-sm text-white/70 truncate">
                         {rec.track?.artist || "Unknown Artist"}
                       </div>
-                      <div className="text-xs text-purple-600 font-medium">
+                      <div className="text-xs text-amber-400 font-semibold">
                         Score: {rec.score || 0}
                       </div>
                     </div>
@@ -448,7 +448,7 @@ export default function Home() {
                         console.log("Selected Track ID:", rec.track?.id);
                         setSelectedTrackId(rec.track?.id);
                       }}
-                      className="ml-3 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm rounded-lg hover:from-green-600 hover:to-emerald-700 font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+                      className="ml-4 px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm rounded-xl hover:from-green-600 hover:to-emerald-700 font-bold transition-all duration-300 shadow-lg hover:shadow-lg"
                     >
                       Play
                     </button>
