@@ -220,8 +220,8 @@ export default function Home() {
           </div>
 
           {/* Search Results */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Search Results</h3>
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">Search Results</h3>
             <div className="max-h-32 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
               {searchLoading ? (
                 <div className="space-y-2">
@@ -262,8 +262,8 @@ export default function Home() {
           </div>
 
           {/* Selected Tracks */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Selected Tracks ({selectedTracks.length})</h3>
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">Selected Tracks ({selectedTracks.length})</h3>
             <div className="max-h-32 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
               {selectedTracks.length > 0 ? (
                 selectedTracks.map((track) => (
