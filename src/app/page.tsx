@@ -175,21 +175,21 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen p-6 bg-gray-100">
-      <h1 className="text-3xl font-extrabold mb-6 text-gray-900 text-center">
+    <div className="h-screen overflow-hidden p-4 bg-gray-100 flex flex-col">
+      <h1 className="text-2xl font-extrabold mb-4 text-gray-900 text-center flex-shrink-0">
         NextTrack
       </h1>
       
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
         {/* Recommendation Form */}
-        <div className="p-6 bg-white rounded-xl shadow-lg min-h-[400px] border border-gray-100">
-          <h2 className="text-2xl font-bold mb-6 text-gray-900 flex items-center">
+        <div className="p-4 bg-white rounded-xl shadow-lg border border-gray-100 flex flex-col h-full">
+          <h2 className="text-xl font-bold mb-4 text-gray-900 flex items-center flex-shrink-0">
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Set Preferences</span>
           </h2>
           
           {/* Search Section */}
-          <div className="mb-6">
+          <div className="mb-4 flex-shrink-0">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Search for Tracks
             </label>
@@ -220,10 +220,10 @@ export default function Home() {
           </div>
 
           {/* Search Results */}
-          <div className="mb-4">
+          <div className="mb-3 flex-shrink-0">
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Search Results</h3>
             {searchLoading ? (
-              <div className="max-h-32 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
+              <div className="h-24 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
                 <div className="space-y-2">
                   {Array.from({ length: 3 }).map((_, index) => (
                     <TrackSkeleton key={index} />
@@ -231,7 +231,7 @@ export default function Home() {
                 </div>
               </div>
             ) : searchResults.length > 0 ? (
-              <div className="max-h-32 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
+              <div className="h-24 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
                 {searchResults.map((track) => (
                   <div
                     key={track.id}
@@ -255,7 +255,7 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              <div className="h-32 flex items-center justify-center bg-gray-50 rounded-lg">
+              <div className="h-24 flex items-center justify-center bg-gray-50 rounded-lg">
                 <EmptyState
                   icon="🔍"
                   title="No search results"
@@ -266,9 +266,9 @@ export default function Home() {
           </div>
 
           {/* Selected Tracks */}
-          <div className="mb-4">
+          <div className="mb-3 flex-shrink-0">
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Selected Tracks ({selectedTracks.length})</h3>
-            <div className="h-32 bg-gray-50 rounded-lg">
+            <div className="h-24 bg-gray-50 rounded-lg">
               {selectedTracks.length > 0 ? (
                 <div className="h-full overflow-y-auto space-y-2 p-3">
                   {selectedTracks.map((track) => (
@@ -299,11 +299,11 @@ export default function Home() {
                 </div>
               )}
             </div>
-            <div className="mt-3 h-10 flex items-center">
+            <div className="mt-2 h-8 flex items-center">
               <button
                 onClick={() => setSelectedTracks([])}
                 disabled={selectedTracks.length === 0}
-                className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Clear All
               </button>
@@ -311,7 +311,7 @@ export default function Home() {
           </div>
 
           {/* Preferences */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4 flex-shrink-0">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Mood</label>
               <select
@@ -353,12 +353,12 @@ export default function Home() {
           </div>
 
           {errorMessage && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{errorMessage}</div>
+            <div className="mb-3 p-2 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex-shrink-0">{errorMessage}</div>
           )}
           
           <button
             onClick={getRecommendations}
-            className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 flex items-center justify-center font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+            className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 flex items-center justify-center font-semibold text-base transition-all duration-200 shadow-lg hover:shadow-xl flex-shrink-0"
             disabled={loading}
           >
             {loading ? (
@@ -373,10 +373,10 @@ export default function Home() {
         </div>
 
         {/* Right Side - Now Playing and Recommendations */}
-        <div className="space-y-6">
+        <div className="flex flex-col h-full space-y-4">
           {/* Now Playing */}
-          <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center flex items-center justify-center">
+          <div className="p-4 bg-white rounded-xl shadow-lg border border-gray-100 flex-shrink-0">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 text-center flex items-center justify-center">
               <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Now Playing</span>
             </h2>
             {selectedTrackId ? (
@@ -384,25 +384,27 @@ export default function Home() {
                 style={{ borderRadius: "12px" }}
                 src={`https://open.spotify.com/embed/track/${selectedTrackId}?autoplay=true`}
                 width="100%"
-                height="200"
+                height="152"
                 allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                 loading="lazy"
               ></iframe>
             ) : (
-              <EmptyState
-                icon="🎧"
-                title="No track selected"
-                description="Select a track to play it here"
-              />
+              <div className="h-32 flex items-center justify-center">
+                <EmptyState
+                  icon="🎧"
+                  title="No track selected"
+                  description="Select a track to play it here"
+                />
+              </div>
             )}
           </div>
 
           {/* Recommendations */}
-          <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100 min-h-[600px]">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center flex items-center justify-center">
+          <div className="p-4 bg-white rounded-xl shadow-lg border border-gray-100 flex-1 flex flex-col">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 text-center flex items-center justify-center flex-shrink-0">
               <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Recommendations</span>
             </h2>
-            <div className="grid grid-cols-1 gap-3 max-h-[500px] overflow-y-auto">
+            <div className="grid grid-cols-1 gap-2 flex-1 overflow-y-auto">
               {loading ? (
                 Array.from({ length: 3 }).map((_, index) => (
                   <RecommendationSkeleton key={index} />
