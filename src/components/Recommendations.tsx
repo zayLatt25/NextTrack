@@ -7,10 +7,6 @@ interface TrackMetadata {
   id: string;
   title: string;
   artist: string;
-  genre: string;
-  popularity?: number;
-  releaseYear?: number;
-  album?: string;
 }
 
 interface Recommendation {
@@ -64,10 +60,7 @@ export default function Recommendations({
                 </div>
               </div>
               <button
-                onClick={() => {
-                  console.log("Selected Track ID:", rec.track?.id);
-                  onTrackSelect(rec.track?.id);
-                }}
+                onClick={() => onTrackSelect(rec.track?.id)}
                 className="ml-4 px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm rounded-xl hover:from-green-600 hover:to-emerald-700 font-bold transition-all duration-300 shadow-lg hover:shadow-lg"
               >
                 Play

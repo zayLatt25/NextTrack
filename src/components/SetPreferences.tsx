@@ -11,8 +11,6 @@ interface Track {
   artists: Array<{ name: string }>;
   album: { name: string };
   popularity: number;
-  preview_url?: string;
-  external_urls: { spotify: string };
 }
 
 interface SetPreferencesProps {

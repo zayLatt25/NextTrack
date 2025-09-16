@@ -10,10 +10,6 @@ interface TrackMetadata {
   id: string;
   title: string;
   artist: string;
-  genre: string;
-  popularity?: number;
-  releaseYear?: number;
-  album?: string;
 }
 
 interface Recommendation {
@@ -23,16 +19,6 @@ interface Recommendation {
 
 interface APIResponse {
   recommendations: Recommendation[];
-  evaluationMetrics?: {
-    genreCoherence: number;
-    popularitySmoothness: number;
-    genreConsistency: number;
-  };
-  searchStrategy: string;
-  searchQueries: string[];
-  totalTracksFound: number;
-  selectedTracksCount: number;
-  extractedGenres: string[];
 }
 
 export default function Home() {
@@ -49,8 +35,6 @@ export default function Home() {
     artists: Array<{ name: string }>;
     album: { name: string };
     popularity: number;
-    preview_url?: string;
-    external_urls: { spotify: string };
   }>>([]);
 
   const getRecommendations = async () => {
@@ -93,14 +77,6 @@ export default function Home() {
 
       const data = await res.json() as APIResponse;
       setRecommendations(data.recommendations);
-
-      console.log('API Response:', {
-        searchStrategy: data.searchStrategy,
-        totalTracksFound: data.totalTracksFound,
-        evaluationMetrics: data.evaluationMetrics,
-        extractedGenres: data.extractedGenres
-      });
-
       setSelectedTrackId(null);
     } catch (error) {
       console.error("Failed to fetch recommendations:", error);
