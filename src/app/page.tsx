@@ -38,21 +38,25 @@ export default function Home() {
   }>>([]);
 
   const getRecommendations = async () => {
+    // Validate that tracks are selected before making API call
     if (selectedTracks.length === 0) {
       setErrorMessage("Please add some tracks for recommendations");
       setTimeout(() => setErrorMessage(null), 1000);
       return;
     }
 
+    //clear previous state and set loading indicator
     setErrorMessage(null);
     setRecommendations([]);
     setLoading(true);
 
     try {
+      // POST request to recommendations API with selected tracks and preferences
       const res = await fetch("/api/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          // Transform tracks to include only necessary data for API
           selectedTracks: selectedTracks.map(track => ({
             id: track.id,
             name: track.name,
@@ -70,18 +74,23 @@ export default function Home() {
         }),
       });
 
+      // Handle API response errors
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || `Error: ${res.status} - ${res.statusText}`);
       }
 
+      // parse successful responses
       const data = await res.json() as APIResponse;
       setRecommendations(data.recommendations);
+      //Clear currently playing track when new recommendations arrive
       setSelectedTrackId(null);
     } catch (error) {
+      // handle any errors during the API call
       console.error("Failed to fetch recommendations:", error);
       setErrorMessage(error instanceof Error ? error.message : "An error occurred");
     } finally {
+      // Always stop loading state regardless of success or failure
       setLoading(false);
     }
   };
@@ -113,9 +122,9 @@ export default function Home() {
           errorMessage={errorMessage}
         />
 
-        {/* Right Side - Now Playing and Recommendations */}
+        {/* right side - Now Playing and Recommendations */}
         <div className="flex flex-col h-[700px] space-y-6">
-          {/* Now Playing Component */}
+          {/* now Playing Component */}
           <NowPlaying selectedTrackId={selectedTrackId} />
 
           {/* Recommendations Component */}
