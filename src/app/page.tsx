@@ -219,94 +219,97 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Search Results */}
-          <div className="mb-3 flex-shrink-0">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Search Results</h3>
-            {searchLoading ? (
-              <div className="h-24 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
-                <div className="space-y-2">
-                  {Array.from({ length: 3 }).map((_, index) => (
-                    <TrackSkeleton key={index} />
-                  ))}
-                </div>
-              </div>
-            ) : searchResults.length > 0 ? (
-              <div className="h-24 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
-                {searchResults.map((track) => (
-                  <div
-                    key={track.id}
-                    className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">{track.name}</div>
-                      <div className="text-sm text-gray-600">{track.artists[0]?.name}</div>
-                    </div>
-                    <button
-                      onClick={() => isTrackSelected(track.id) ? removeTrackFromCollection(track.id) : addTrackToCollection(track)}
-                      className={`px-4 py-2 text-sm rounded-lg font-medium transition-all duration-200 ${
-                        isTrackSelected(track.id) 
-                          ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200' 
-                          : 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200'
-                      }`}
-                    >
-                      {isTrackSelected(track.id) ? 'Remove' : 'Add'}
-                    </button>
+          {/* Search Results and Selected Tracks - Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6 flex-1 min-h-0">
+            {/* Search Results */}
+            <div className="flex flex-col">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Search Results</h3>
+              {searchLoading ? (
+                <div className="h-40 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
+                  <div className="space-y-2">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                      <TrackSkeleton key={index} />
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="h-24 flex items-center justify-center bg-gray-50 rounded-lg">
-                <EmptyState
-                  icon="🔍"
-                  title="No search results"
-                  description="Search for tracks to see results here"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Selected Tracks */}
-          <div className="mb-3 flex-shrink-0">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Selected Tracks ({selectedTracks.length})</h3>
-            <div className="h-24 bg-gray-50 rounded-lg">
-              {selectedTracks.length > 0 ? (
-                <div className="h-full overflow-y-auto space-y-2 p-3">
-                  {selectedTracks.map((track) => (
+                </div>
+              ) : searchResults.length > 0 ? (
+                <div className="h-40 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
+                  {searchResults.map((track) => (
                     <div
                       key={track.id}
                       className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200"
                     >
-                      <div className="flex-1">
-                        <div className="font-medium text-gray-900">{track.name}</div>
-                        <div className="text-sm text-gray-600">{track.artists[0]?.name}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-900 truncate">{track.name}</div>
+                        <div className="text-sm text-gray-600 truncate">{track.artists[0]?.name}</div>
                       </div>
                       <button
-                        onClick={() => removeTrackFromCollection(track.id)}
-                        className="px-4 py-2 bg-red-100 text-red-700 text-sm rounded-lg hover:bg-red-200 font-medium transition-all duration-200"
+                        onClick={() => isTrackSelected(track.id) ? removeTrackFromCollection(track.id) : addTrackToCollection(track)}
+                        className={`px-3 py-2 text-xs rounded-lg font-medium transition-all duration-200 flex-shrink-0 ${
+                          isTrackSelected(track.id) 
+                            ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200' 
+                            : 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200'
+                        }`}
                       >
-                        Remove
+                        {isTrackSelected(track.id) ? 'Remove' : 'Add'}
                       </button>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="h-full flex items-center justify-center">
+                <div className="h-40 flex items-center justify-center bg-gray-50 rounded-lg">
                   <EmptyState
-                    icon="🎵"
-                    title="No tracks selected"
-                    description="Add tracks from search results to build your collection"
+                    icon="🔍"
+                    title="No search results"
+                    description="Search for tracks to see results here"
                   />
                 </div>
               )}
             </div>
-            <div className="mt-2 h-8 flex items-center">
-              <button
-                onClick={() => setSelectedTracks([])}
-                disabled={selectedTracks.length === 0}
-                className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Clear All
-              </button>
+
+            {/* Selected Tracks */}
+            <div className="flex flex-col">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Selected Tracks ({selectedTracks.length})</h3>
+              <div className="h-40 bg-gray-50 rounded-lg">
+                {selectedTracks.length > 0 ? (
+                  <div className="h-full overflow-y-auto space-y-2 p-3">
+                    {selectedTracks.map((track) => (
+                      <div
+                        key={track.id}
+                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 truncate">{track.name}</div>
+                          <div className="text-sm text-gray-600 truncate">{track.artists[0]?.name}</div>
+                        </div>
+                        <button
+                          onClick={() => removeTrackFromCollection(track.id)}
+                          className="px-3 py-2 bg-red-100 text-red-700 text-xs rounded-lg hover:bg-red-200 font-medium transition-all duration-200 flex-shrink-0"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <EmptyState
+                      icon="🎵"
+                      title="No tracks selected"
+                      description="Add tracks from search results to build your collection"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="mt-2 h-8 flex items-center">
+                <button
+                  onClick={() => setSelectedTracks([])}
+                  disabled={selectedTracks.length === 0}
+                  className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Clear All
+                </button>
+              </div>
             </div>
           </div>
 
@@ -356,20 +359,23 @@ export default function Home() {
             <div className="mb-3 p-2 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex-shrink-0">{errorMessage}</div>
           )}
           
-          <button
-            onClick={getRecommendations}
-            className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 flex items-center justify-center font-semibold text-base transition-all duration-200 shadow-lg hover:shadow-xl flex-shrink-0"
-            disabled={loading}
-          >
-            {loading ? (
-              <svg className="animate-spin h-6 w-6 text-white" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C6.477 0 2 4.477 2 10h2zm2 5.291A7.962 7.962 0 014 12H2c0 3.042 1.135 5.824 3 7.938l1-1.647z"></path>
-              </svg>
-            ) : (
-              "Get Recommendations"
-            )}
-          </button>
+          {/* Get Recommendations Button - moved to bottom */}
+          <div className="mt-auto">
+            <button
+              onClick={getRecommendations}
+              className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 flex items-center justify-center font-semibold text-base transition-all duration-200 shadow-lg hover:shadow-xl flex-shrink-0"
+              disabled={loading}
+            >
+              {loading ? (
+                <svg className="animate-spin h-6 w-6 text-white" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C6.477 0 2 4.477 2 10h2zm2 5.291A7.962 7.962 0 014 12H2c0 3.042 1.135 5.824 3 7.938l1-1.647z"></path>
+                </svg>
+              ) : (
+                "Get Recommendations"
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Right Side - Now Playing and Recommendations */}
