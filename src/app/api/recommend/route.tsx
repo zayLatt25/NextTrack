@@ -518,13 +518,16 @@ export async function POST(req: Request) {
 
     filteredRecommendations.sort((a, b) => b.score - a.score);
 
+    // Limit recommendations to maximum of 20
+    const limitedRecommendations = filteredRecommendations.slice(0, 20);
+
     const evaluationMetrics = calculateEvaluationMetrics(
-      filteredRecommendations
+      limitedRecommendations
     );
 
     return NextResponse.json(
       {
-        recommendations: filteredRecommendations,
+        recommendations: limitedRecommendations,
         evaluationMetrics,
         searchStrategy: "track-based",
         searchQueries,

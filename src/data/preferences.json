@@ -3,7 +3,8 @@
     { "value": "happy", "label": "Happy" },
     { "value": "sad", "label": "Sad" },
     { "value": "energetic", "label": "Energetic" },
-    { "value": "calm", "label": "Calm" }
+    { "value": "calm", "label": "Calm" },
+    { "value": "romantic", "label": "Romantic" }
   ],
   "timeOfDay": [
     { "value": "morning", "label": "Morning" },

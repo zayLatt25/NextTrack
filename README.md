@@ -189,11 +189,12 @@ Get evaluation metrics and test data for testing the recommendation system.
 
 The recommendation system uses a balanced multi-factor scoring approach that prioritizes track similarity and user preferences:
 
-1. **Track Similarity** (Weight: 4) - **Highest Priority**
+1. **Track Similarity** (Weight: 2, capped) - **Highest Priority**
    - Artist similarity matching (50% weight)
    - Title similarity scoring (30% weight)
    - Popularity similarity (20% weight)
    - Compares against all selected reference tracks
+   - Maximum contribution: 2 points
 
 2. **Genre Matching** (Weight: 3)
    - Matches against genres extracted from selected tracks
@@ -217,7 +218,7 @@ The recommendation system uses a balanced multi-factor scoring approach that pri
 
 **Scoring Formula:**
 ```
-Score = (Track Similarity × 4) + (Genre Match × 3) + (Mood Similarity × 3) + (Context Score × 2) + (Popularity Bonus × 1)
+Score = (Track Similarity × 2, capped) + (Genre Match × 3) + (Mood Similarity × 3) + (Context Score × 2) + (Popularity Bonus × 1)
 ```
 
 ## 🔍 Track Analysis
@@ -247,22 +248,117 @@ Built-in quality assessment includes:
 4. **Get Recommendations**: Click "Get Recommendations" to receive personalized suggestions
 5. **Play Tracks**: Use the embedded Spotify player to preview recommendations
 
-### Backend Processing
-1. **Track Selection**: Users search and select reference tracks using the built-in search interface
-2. **Genre Extraction**: System automatically extracts genres from selected tracks' artist metadata
-3. **Search Query Generation**: Creates multiple search queries based on:
-   - Selected track names and artists
-   - Extracted genres from reference tracks
-4. **Track Discovery**: Fetches tracks from multiple Spotify API searches and removes duplicates
-5. **Multi-Factor Scoring**: Applies scoring algorithm considering:
-   - Track similarity to reference tracks
-   - Genre matching with extracted genres
-   - Mood-based preferences
-   - Context awareness (time of day, activity)
-   - Popularity bonuses
-6. **Filtering**: Removes selected reference tracks from recommendations
-7. **Ranking**: Sorts recommendations by calculated scores (rounded to 2 decimal places)
-8. **Evaluation**: Calculates quality metrics for assessment
+### Recommendation Engine - Step-by-Step Process
+
+#### **Phase 1: Input Collection & Validation**
+1. **User Input Gathering**
+   - User selects tracks from Spotify search results
+   - User optionally sets mood preferences (happy, sad, energetic, calm, romantic)
+   - User optionally sets context (time of day: morning/afternoon/evening/night)
+   - User optionally sets activity (workout/study/party/relax)
+
+2. **Input Validation**
+   - System validates that at least one track is selected before proceeding
+   - If no tracks selected, shows error message and stops
+
+#### **Phase 2: Authentication & Data Fetching**
+3. **Spotify Authentication**
+   - System obtains Spotify access token using client credentials flow
+   - Uses `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` from environment variables
+
+4. **Genre Extraction from Selected Tracks**
+   - For each selected track, system fetches artist metadata from Spotify
+   - Extracts all genres associated with each artist
+   - Creates a comprehensive list of genres from all selected tracks
+   - This helps understand the user's musical taste profile
+
+#### **Phase 3: Search Query Generation**
+5. **Multi-Query Strategy**
+   - **Track-based queries**: Creates search queries using track names + artist names (up to 3)
+   - **Genre-based queries**: Uses extracted genres from selected tracks (up to 3)
+   - **Mood-based queries**: If mood is set, adds preferred genres for that mood (up to 2)
+   - Example: If user selected "Bohemian Rhapsody" and mood is "energetic", queries might include:
+     - "Bohemian Rhapsody Queen" (track-based)
+     - "rock" (genre-based)
+     - "electronic dance" (mood-based)
+
+#### **Phase 4: Track Discovery**
+6. **Parallel Track Fetching**
+   - Executes all search queries simultaneously using `Promise.all()`
+   - Each query returns up to 20 tracks from Spotify
+   - Handles API failures gracefully (continues with successful queries)
+
+7. **Deduplication**
+   - Removes duplicate tracks based on Spotify track ID
+   - Ensures each unique track appears only once in the candidate pool
+
+#### **Phase 5: Track Scoring & Ranking**
+8. **Metadata Enrichment**
+   - For each candidate track, fetches artist metadata to get genre information
+   - Builds comprehensive `TrackMetadata` objects with:
+     - Track ID, title, artist, genre
+     - Popularity score, release year, album name
+
+9. **Multi-Factor Scoring System**
+   The system calculates a score for each track using weighted factors:
+
+   **a) Genre Match (Weight: 3)**
+   - +3 points if track genre matches any extracted genre from selected tracks
+
+   **b) Selected Track Similarity (Weight: 2, capped at 2)**
+   - Artist similarity (50% weight): Checks if artist names contain each other
+   - Title similarity (30% weight): Compares track titles with fuzzy matching
+   - Popularity similarity (20% weight): Compares popularity scores
+   - Applies penalty for remix/cover versions (multiplies by 0.7)
+
+   **c) Mood Similarity (Weight: 3)**
+   - Maps mood to preferred genres and popularity ranges:
+     - Happy: pop, dance, electronic, indie-pop (60-100 popularity)
+     - Sad: indie, folk, acoustic, alternative (20-80 popularity)
+     - Energetic: rock, electronic, dance, hip-hop, metal (40-100 popularity)
+     - Calm: ambient, classical, jazz, acoustic, chill (10-70 popularity)
+     - Romantic: r&b, soul, jazz, acoustic, indie, pop, folk (30-90 popularity)
+   - +3 points for good mood match, -1.5 points for poor mood match
+
+   **d) Context Scoring (Weight: 2)**
+   - **Time of Day**: Different genres preferred for morning/afternoon/evening/night
+   - **Activity**: Different genres preferred for workout/study/party/relax
+   - Combines both factors with 60% time weight, 40% activity weight
+
+   **e) Popularity Bonus (Weight: 1)**
+   - +1 point for tracks with popularity > 70
+
+#### **Phase 6: Filtering & Finalization**
+10. **Quality Filtering**
+    - Removes selected tracks from recommendations (no self-recommendations)
+    - Deduplicates by title + artist combination
+    - Sorts by calculated score (highest first)
+
+11. **Result Limiting**
+    - Returns top 20 recommendations maximum
+    - Ensures manageable result set for user interface
+
+#### **Phase 7: Evaluation & Response**
+12. **Quality Metrics Calculation**
+    - **Genre Coherence**: Ratio of dominant genre in recommendations
+    - **Popularity Smoothness**: How smoothly popularity varies across recommendations
+    - **Genre Consistency**: Diversity ratio of genres in recommendations
+
+13. **API Response**
+    - Returns recommendations with scores
+    - Includes evaluation metrics for quality assessment
+    - Provides search strategy and query information for debugging
+    - Shows total tracks found and extracted genres
+
+### Key Features of the Engine:
+
+- **Multi-signal approach**: Combines track similarity, mood, context, and popularity
+- **Fuzzy matching**: Handles variations in artist names and track titles
+- **Context awareness**: Considers time of day and activity for better recommendations
+- **Quality control**: Removes duplicates and applies penalties for remixes/covers
+- **Parallel processing**: Efficiently fetches data from multiple sources simultaneously
+- **Graceful degradation**: Continues working even if some API calls fail
+- **Evaluation metrics**: Provides feedback on recommendation quality
 
 ## 🎨 Mood Support
 
