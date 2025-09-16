@@ -78,6 +78,7 @@ function getMoodPreferences(mood: string): {
     },
   };
 
+  // Handle case-insensitive mood matching (e.g., "Happy" -> "happy")
   return (
     moodMappings[mood.toLowerCase()] || {
       preferredGenres: [],
