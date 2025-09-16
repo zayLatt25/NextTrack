@@ -222,15 +222,17 @@ export default function Home() {
           {/* Search Results */}
           <div className="mb-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Search Results</h3>
-            <div className="max-h-32 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
-              {searchLoading ? (
+            {searchLoading ? (
+              <div className="max-h-32 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
                 <div className="space-y-2">
                   {Array.from({ length: 3 }).map((_, index) => (
                     <TrackSkeleton key={index} />
                   ))}
                 </div>
-              ) : searchResults.length > 0 ? (
-                searchResults.map((track) => (
+              </div>
+            ) : searchResults.length > 0 ? (
+              <div className="max-h-32 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
+                {searchResults.map((track) => (
                   <div
                     key={track.id}
                     className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200"
@@ -250,55 +252,62 @@ export default function Home() {
                       {isTrackSelected(track.id) ? 'Remove' : 'Add'}
                     </button>
                   </div>
-                ))
-              ) : (
+                ))}
+              </div>
+            ) : (
+              <div className="h-32 flex items-center justify-center bg-gray-50 rounded-lg">
                 <EmptyState
                   icon="🔍"
                   title="No search results"
                   description="Search for tracks to see results here"
                 />
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Selected Tracks */}
           <div className="mb-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Selected Tracks ({selectedTracks.length})</h3>
-            <div className="max-h-32 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
+            <div className="h-32 bg-gray-50 rounded-lg">
               {selectedTracks.length > 0 ? (
-                selectedTracks.map((track) => (
-                  <div
-                    key={track.id}
-                    className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">{track.name}</div>
-                      <div className="text-sm text-gray-600">{track.artists[0]?.name}</div>
-                    </div>
-                    <button
-                      onClick={() => removeTrackFromCollection(track.id)}
-                      className="px-4 py-2 bg-red-100 text-red-700 text-sm rounded-lg hover:bg-red-200 font-medium transition-all duration-200"
+                <div className="h-full overflow-y-auto space-y-2 p-3">
+                  {selectedTracks.map((track) => (
+                    <div
+                      key={track.id}
+                      className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200"
                     >
-                      Remove
-                    </button>
-                  </div>
-                ))
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">{track.name}</div>
+                        <div className="text-sm text-gray-600">{track.artists[0]?.name}</div>
+                      </div>
+                      <button
+                        onClick={() => removeTrackFromCollection(track.id)}
+                        className="px-4 py-2 bg-red-100 text-red-700 text-sm rounded-lg hover:bg-red-200 font-medium transition-all duration-200"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <EmptyState
-                  icon="🎵"
-                  title="No tracks selected"
-                  description="Add tracks from search results to build your collection"
-                />
+                <div className="h-full flex items-center justify-center">
+                  <EmptyState
+                    icon="🎵"
+                    title="No tracks selected"
+                    description="Add tracks from search results to build your collection"
+                  />
+                </div>
               )}
             </div>
-            {selectedTracks.length > 0 && (
+            <div className="mt-3 h-10 flex items-center">
               <button
                 onClick={() => setSelectedTracks([])}
-                className="mt-3 px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 font-medium transition-all duration-200"
+                disabled={selectedTracks.length === 0}
+                className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Clear All
               </button>
-            )}
+            </div>
           </div>
 
           {/* Preferences */}
