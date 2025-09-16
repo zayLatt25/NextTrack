@@ -299,16 +299,16 @@ export default function Home() {
                       <EmptyState
                         icon="🎵"
                         title="No tracks selected"
-                        description="Add tracks from search results to build your collection"
+                        description="Add tracks from search results"
                       />
                     </div>
                   )}
                 </div>
-                <div className="mt-3 h-8 flex items-center flex-shrink-0">
+                <div className="mt-3 h-6 flex items-center flex-shrink-0">
                   <button
                     onClick={() => setSelectedTracks([])}
                     disabled={selectedTracks.length === 0}
-                    className="px-4 py-2 bg-white/10 text-white/70 text-sm rounded-lg hover:bg-white/20 font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
+                    className="px-3 py-1 bg-white/10 text-white/70 text-xs rounded-lg hover:bg-white/20 font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
                   >
                     Clear All
                   </button>
@@ -322,7 +322,7 @@ export default function Home() {
             <div>
               <label className="block text-sm font-semibold text-white/90 mb-3">Mood</label>
               <select
-                className="w-full p-4 border border-white/20 rounded-xl bg-white/5 text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-300"
+                className="w-full p-3 border border-white/20 rounded-xl bg-white/5 text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-300"
                 onChange={(e) => setMood(e.target.value || undefined)}
               >
                 <option value="" className="bg-gray-800 text-white">Select mood</option>
@@ -334,7 +334,7 @@ export default function Home() {
             <div>
               <label className="block text-sm font-semibold text-white/90 mb-3">Time of Day</label>
               <select
-                className="w-full p-4 border border-white/20 rounded-xl bg-white/5 text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 transition-all duration-300"
+                className="w-full p-3 border border-white/20 rounded-xl bg-white/5 text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 transition-all duration-300"
                 onChange={(e) => setTimeOfDay(e.target.value || undefined)}
               >
                 <option value="" className="bg-gray-800 text-white">Select time</option>
@@ -347,7 +347,7 @@ export default function Home() {
             <div>
               <label className="block text-sm font-semibold text-white/90 mb-3">Activity</label>
               <select
-                className="w-full p-4 border border-white/20 rounded-xl bg-white/5 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-400 transition-all duration-300"
+                className="w-full p-3 border border-white/20 rounded-xl bg-white/5 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-400 transition-all duration-300"
                 onChange={(e) => setActivity(e.target.value || undefined)}
               >
                 <option value="" className="bg-gray-800 text-white">Select activity</option>
