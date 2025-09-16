@@ -73,7 +73,11 @@ export default function Home() {
 
   const getRecommendations = async () => {
     if (selectedTracks.length === 0) {
-      setErrorMessage("Please add some tracks for recommendations.");
+      setErrorMessage("Please add some tracks for recommendations");
+      // Clear error message after 1 second
+      setTimeout(() => {
+        setErrorMessage(null);
+      }, 1000);
       return;
     }
 
@@ -132,6 +136,10 @@ export default function Home() {
   const searchTracks = async () => {
     if (!searchQuery.trim()) {
       setErrorMessage("Please enter a search query.");
+      // Clear error message after 1 second
+      setTimeout(() => {
+        setErrorMessage(null);
+      }, 1000);
       return;
     }
 
@@ -359,15 +367,15 @@ export default function Home() {
             </div>
           </div>
 
-          {errorMessage && (
-            <div className="mb-4 p-4 bg-red-500/10 border border-red-400/30 text-red-300 rounded-xl text-sm flex-shrink-0">{errorMessage}</div>
-          )}
-          
           {/* Get Recommendations Button */}
           <div className="flex-shrink-0">
             <button
               onClick={getRecommendations}
-              className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 via-cyan-500 to-amber-500 text-white rounded-xl hover:from-purple-700 hover:via-cyan-600 hover:to-amber-600 disabled:opacity-50 flex items-center justify-center font-bold text-lg transition-all duration-300 shadow-2xl hover:shadow-2xl min-h-[56px]"
+              className={`w-full px-6 py-4 rounded-xl disabled:opacity-50 flex items-center justify-center font-bold text-lg transition-all duration-300 shadow-2xl hover:shadow-2xl min-h-[56px] ${
+                errorMessage 
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600' 
+                  : 'bg-gradient-to-r from-purple-600 via-cyan-500 to-amber-500 text-white hover:from-purple-700 hover:via-cyan-600 hover:to-amber-600'
+              }`}
               disabled={loading}
             >
               {loading ? (
@@ -377,6 +385,8 @@ export default function Home() {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C6.477 0 2 4.477 2 10h2zm2 5.291A7.962 7.962 0 014 12H2c0 3.042 1.135 5.824 3 7.938l1-1.647z"></path>
                   </svg>
                 </div>
+              ) : errorMessage ? (
+                errorMessage
               ) : (
                 "Get Recommendations"
               )}
