@@ -65,10 +65,10 @@ export default function Home() {
 
   // Available moods for the dropdown
   const availableMoods = [
-    "happy",
-    "sad", 
-    "energetic",
-    "calm"
+    { value: "happy", label: "Happy" },
+    { value: "sad", label: "Sad" },
+    { value: "energetic", label: "Energetic" },
+    { value: "calm", label: "Calm" }
   ];
 
   const getRecommendations = async () => {
@@ -335,7 +335,7 @@ export default function Home() {
               >
                 <option value="" className="bg-gray-800 text-white">Select mood</option>
                 {availableMoods.map((mood) => (
-                  <option key={mood} value={mood} className="capitalize bg-gray-800 text-white">{mood}</option>
+                  <option key={mood.value} value={mood.value} className="bg-gray-800 text-white">{mood.label}</option>
                 ))}
               </select>
             </div>
