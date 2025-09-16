@@ -56,7 +56,7 @@ body {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Subtle glow effects - reduced for performance */
+/* Subtle glow effects */
 .glow-purple {
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
 }
@@ -77,15 +77,14 @@ body {
   background-clip: text;
 }
 
-/* Glass morphism effect - reduced blur for performance */
+/* Glass morphism effect */
 .glass {
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* Static gradient background - reduced animation for performance */
+/* Static gradient background */
 .animated-bg {
   background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
-  /* Removed animation for better performance */
 }
