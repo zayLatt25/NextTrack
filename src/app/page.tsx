@@ -3,6 +3,7 @@
 import { useState } from "react";
 import EmptyState from "../components/EmptyState";
 import { TrackSkeleton, RecommendationSkeleton } from "../components/SkeletonLoader";
+import preferences from "../data/preferences.json";
 
 // TypeScript interfaces for type safety
 interface TrackMetadata {
@@ -63,13 +64,10 @@ export default function Home() {
     external_urls: { spotify: string };
   }>>([]);
 
-  // Available moods for the dropdown
-  const availableMoods = [
-    { value: "happy", label: "Happy" },
-    { value: "sad", label: "Sad" },
-    { value: "energetic", label: "Energetic" },
-    { value: "calm", label: "Calm" }
-  ];
+  // Get preferences data
+  const availableMoods = preferences.moods;
+  const availableTimeOfDay = preferences.timeOfDay;
+  const availableActivities = preferences.activities;
 
   const getRecommendations = async () => {
     if (selectedTracks.length === 0) {
@@ -346,10 +344,9 @@ export default function Home() {
                 onChange={(e) => setTimeOfDay(e.target.value || undefined)}
               >
                 <option value="" className="bg-gray-800 text-white">Select time</option>
-                <option value="morning" className="bg-gray-800 text-white">Morning</option>
-                <option value="afternoon" className="bg-gray-800 text-white">Afternoon</option>
-                <option value="evening" className="bg-gray-800 text-white">Evening</option>
-                <option value="night" className="bg-gray-800 text-white">Night</option>
+                {availableTimeOfDay.map((time) => (
+                  <option key={time.value} value={time.value} className="bg-gray-800 text-white">{time.label}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -359,10 +356,9 @@ export default function Home() {
                 onChange={(e) => setActivity(e.target.value || undefined)}
               >
                 <option value="" className="bg-gray-800 text-white">Select activity</option>
-                <option value="workout" className="bg-gray-800 text-white">Workout</option>
-                <option value="study" className="bg-gray-800 text-white">Study</option>
-                <option value="party" className="bg-gray-800 text-white">Party</option>
-                <option value="relax" className="bg-gray-800 text-white">Relax</option>
+                {availableActivities.map((activity) => (
+                  <option key={activity.value} value={activity.value} className="bg-gray-800 text-white">{activity.label}</option>
+                ))}
               </select>
             </div>
           </div>

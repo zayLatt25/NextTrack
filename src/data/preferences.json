@@ -1,3 +1,20 @@
 {
-  "moods": ["happy", "sad", "energetic", "calm"]
+  "moods": [
+    { "value": "happy", "label": "Happy" },
+    { "value": "sad", "label": "Sad" },
+    { "value": "energetic", "label": "Energetic" },
+    { "value": "calm", "label": "Calm" }
+  ],
+  "timeOfDay": [
+    { "value": "morning", "label": "Morning" },
+    { "value": "afternoon", "label": "Afternoon" },
+    { "value": "evening", "label": "Evening" },
+    { "value": "night", "label": "Night" }
+  ],
+  "activities": [
+    { "value": "workout", "label": "Workout" },
+    { "value": "study", "label": "Study" },
+    { "value": "party", "label": "Party" },
+    { "value": "relax", "label": "Relax" }
+  ]
 }
