@@ -183,19 +183,21 @@ export default function Home() {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Recommendation Form */}
-        <div className="p-6 bg-white rounded shadow-lg min-h-[700px]">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">
-            Set Preferences
+        <div className="p-6 bg-white rounded-xl shadow-lg min-h-[700px] border border-gray-100">
+          <h2 className="text-2xl font-bold mb-6 text-gray-900 flex items-center">
+            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Set Preferences</span>
           </h2>
-          <div className="mb-4">
-            <label className="block text-md font-medium text-gray-900">
+          
+          {/* Search Section */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
               Search for Tracks
             </label>
             <div className="flex gap-2">
               <input
                 type="text"
                 placeholder="Search for songs, artists, or albums..."
-                className="flex-1 p-2 border border-gray-300 rounded bg-white text-gray-900"
+                className="flex-1 p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && searchTracks()}
@@ -203,86 +205,157 @@ export default function Home() {
               <button
                 onClick={searchTracks}
                 disabled={searchLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 transition-all duration-200 font-medium"
               >
-                {searchLoading ? "..." : "Search"}
+                {searchLoading ? (
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C6.477 0 2 4.477 2 10h2zm2 5.291A7.962 7.962 0 014 12H2c0 3.042 1.135 5.824 3 7.938l1-1.647z"></path>
+                  </svg>
+                ) : (
+                  "Search"
+                )}
               </button>
             </div>
           </div>
-          <div className="mb-4">
-            <label className="block text-md font-medium text-gray-900">
-              Mood
-            </label>
-            <select
-              className="mt-1 block w-full p-2 border border-gray-300 rounded bg-white text-gray-900"
-              onChange={(e) => setMood(e.target.value || undefined)}
-            >
-              <option value="">Select a mood</option>
-              {availableMoods.map((mood) => (
-                <option key={mood} value={mood}>
-                  {mood}
-                </option>
-              ))}
-            </select>
+
+          {/* Search Results */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Search Results</h3>
+            <div className="max-h-48 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
+              {searchLoading ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <TrackSkeleton key={index} />
+                  ))}
+                </div>
+              ) : searchResults.length > 0 ? (
+                searchResults.map((track) => (
+                  <div
+                    key={track.id}
+                    className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200"
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{track.name}</div>
+                      <div className="text-sm text-gray-600">{track.artists[0]?.name}</div>
+                    </div>
+                    <button
+                      onClick={() => isTrackSelected(track.id) ? removeTrackFromCollection(track.id) : addTrackToCollection(track)}
+                      className={`px-4 py-2 text-sm rounded-lg font-medium transition-all duration-200 ${
+                        isTrackSelected(track.id) 
+                          ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200' 
+                          : 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200'
+                      }`}
+                    >
+                      {isTrackSelected(track.id) ? 'Remove' : 'Add'}
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <EmptyState
+                  icon="🔍"
+                  title="No search results"
+                  description="Search for tracks to see results here"
+                />
+              )}
+            </div>
           </div>
-          <div className="mb-4">
-            <label className="block text-md font-medium text-gray-900">
-              Time of Day
-            </label>
-            <select
-              className="mt-1 block w-full p-2 border border-gray-300 rounded bg-white text-gray-900"
-              onChange={(e) => setTimeOfDay(e.target.value || undefined)}
-            >
-              <option value="">Select time of day</option>
-              <option value="morning">Morning</option>
-              <option value="afternoon">Afternoon</option>
-              <option value="evening">Evening</option>
-              <option value="night">Night</option>
-            </select>
+
+          {/* Selected Tracks */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Selected Tracks ({selectedTracks.length})</h3>
+            <div className="max-h-48 overflow-y-auto space-y-2 bg-gray-50 rounded-lg p-3">
+              {selectedTracks.length > 0 ? (
+                selectedTracks.map((track) => (
+                  <div
+                    key={track.id}
+                    className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200"
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{track.name}</div>
+                      <div className="text-sm text-gray-600">{track.artists[0]?.name}</div>
+                    </div>
+                    <button
+                      onClick={() => removeTrackFromCollection(track.id)}
+                      className="px-4 py-2 bg-red-100 text-red-700 text-sm rounded-lg hover:bg-red-200 font-medium transition-all duration-200"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <EmptyState
+                  icon="🎵"
+                  title="No tracks selected"
+                  description="Add tracks from search results to build your collection"
+                />
+              )}
+            </div>
+            {selectedTracks.length > 0 && (
+              <button
+                onClick={() => setSelectedTracks([])}
+                className="mt-3 px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 font-medium transition-all duration-200"
+              >
+                Clear All
+              </button>
+            )}
           </div>
-          <div className="mb-4">
-            <label className="block text-md font-medium text-gray-900">
-              Activity
-            </label>
-            <select
-              className="mt-1 block w-full p-2 border border-gray-300 rounded bg-white text-gray-900"
-              onChange={(e) => setActivity(e.target.value || undefined)}
-            >
-              <option value="">Select activity</option>
-              <option value="workout">Workout</option>
-              <option value="study">Study</option>
-              <option value="party">Party</option>
-              <option value="relax">Relax</option>
-            </select>
+
+          {/* Preferences */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Mood</label>
+              <select
+                className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                onChange={(e) => setMood(e.target.value || undefined)}
+              >
+                <option value="">Select mood</option>
+                {availableMoods.map((mood) => (
+                  <option key={mood} value={mood} className="capitalize">{mood}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Time of Day</label>
+              <select
+                className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                onChange={(e) => setTimeOfDay(e.target.value || undefined)}
+              >
+                <option value="">Select time</option>
+                <option value="morning">Morning</option>
+                <option value="afternoon">Afternoon</option>
+                <option value="evening">Evening</option>
+                <option value="night">Night</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Activity</label>
+              <select
+                className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                onChange={(e) => setActivity(e.target.value || undefined)}
+              >
+                <option value="">Select activity</option>
+                <option value="workout">Workout</option>
+                <option value="study">Study</option>
+                <option value="party">Party</option>
+                <option value="relax">Relax</option>
+              </select>
+            </div>
           </div>
+
           {errorMessage && (
-            <div className="text-red-600 text-sm mb-4">{errorMessage}</div>
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{errorMessage}</div>
           )}
+          
           <button
             onClick={getRecommendations}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full flex items-center justify-center"
+            className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 flex items-center justify-center font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
             disabled={loading}
           >
             {loading ? (
-              <svg
-                className="animate-spin h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C6.477 0 2 4.477 2 10h2zm2 5.291A7.962 7.962 0 014 12H2c0 3.042 1.135 5.824 3 7.938l1-1.647z"
-                ></path>
+              <svg className="animate-spin h-6 w-6 text-white" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C6.477 0 2 4.477 2 10h2zm2 5.291A7.962 7.962 0 014 12H2c0 3.042 1.135 5.824 3 7.938l1-1.647z"></path>
               </svg>
             ) : (
               "Get Recommendations"
@@ -290,108 +363,17 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Search Results */}
-        <div className="p-4 bg-white rounded shadow-lg">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">
-            Search Results
-          </h2>
-          <div className="max-h-64 overflow-y-auto space-y-2">
-            {searchLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <TrackSkeleton key={index} />
-                ))}
-              </div>
-            ) : searchResults.length > 0 ? (
-              searchResults.map((track) => (
-                <div
-                  key={track.id}
-                  className="flex items-center justify-between p-2 border border-gray-200 rounded hover:bg-gray-50"
-                >
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">{track.name}</div>
-                    <div className="text-sm text-gray-600">{track.artists[0]?.name}</div>
-                  </div>
-                  <button
-                    onClick={() => isTrackSelected(track.id) ? removeTrackFromCollection(track.id) : addTrackToCollection(track)}
-                    className={`px-3 py-1 text-sm rounded ${
-                      isTrackSelected(track.id) 
-                        ? 'bg-red-600 text-white hover:bg-red-700' 
-                        : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}
-                  >
-                    {isTrackSelected(track.id) ? 'Remove' : 'Add'}
-                  </button>
-                </div>
-              ))
-            ) : (
-              <EmptyState
-                icon="🔍"
-                title="No search results"
-                description="Search for tracks to see results here"
-              />
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Second Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        {/* Selected Tracks */}
-        <div className="p-4 bg-white rounded shadow-lg">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">
-            Selected Tracks for Recommendations ({selectedTracks.length})
-          </h2>
-          <div className="max-h-64 overflow-y-auto space-y-2">
-            {selectedTracks.length > 0 ? (
-              selectedTracks.map((track) => (
-                <div
-                  key={track.id}
-                  className="flex items-center justify-between p-2 border border-gray-200 rounded hover:bg-gray-50"
-                >
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">{track.name}</div>
-                    <div className="text-sm text-gray-600">{track.artists[0]?.name}</div>
-                  </div>
-                  <button
-                    onClick={() => removeTrackFromCollection(track.id)}
-                    className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))
-            ) : (
-              <EmptyState
-                icon="🎵"
-                title="No tracks selected"
-                description="Add tracks from search results to build your collection"
-              />
-            )}
-          </div>
-          {selectedTracks.length > 0 && (
-            <div className="mt-4 flex gap-2">
-              <button
-                onClick={() => setSelectedTracks([])}
-                className="px-4 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
-              >
-                Clear All
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Spotify Player */}
-        <div className="p-4 bg-white rounded shadow-lg">
-          <h2 className="text-xl font-bold mb-4 text-gray-900 text-center">
-            Now Playing
+        {/* Now Playing */}
+        <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
+          <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center flex items-center justify-center">
+            <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Now Playing</span>
           </h2>
           {selectedTrackId ? (
             <iframe
               style={{ borderRadius: "12px" }}
               src={`https://open.spotify.com/embed/track/${selectedTrackId}?autoplay=true`}
               width="100%"
-              height="100"
+              height="400"
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
               loading="lazy"
             ></iframe>
@@ -405,47 +387,52 @@ export default function Home() {
         </div>
       </div>
 
+
       {/* Recommendations */}
-      <div className="mt-6">
-        <h2 className="text-2xl font-bold mb-4 text-gray-900">
-          Recommendations
+      <div className="mt-8">
+        <h2 className="text-3xl font-bold mb-6 text-gray-900 text-center">
+          <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Recommendations</span>
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
-            Array.from({ length: 4 }).map((_, index) => (
+            Array.from({ length: 6 }).map((_, index) => (
               <RecommendationSkeleton key={index} />
             ))
           ) : recommendations.length > 0 ? (
             recommendations.map((rec: Recommendation) => (
               <div
                 key={rec.track?.id || Math.random()}
-                className="p-6 bg-gray-50 rounded shadow-lg flex flex-col space-y-3"
+                className="p-6 bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 flex flex-col space-y-4 group"
               >
-                <div
-                  className="text-xl font-bold text-gray-800 truncate"
-                  style={{
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {rec.track?.title || "Unknown Title"}
-                </div>
-                <div className="text-md text-gray-600">
-                  Artist: {rec.track?.artist || "Unknown Artist"}
-                </div>
-                <div className="text-md text-gray-600">
-                  Genre: {rec.track?.genre || "Unknown Genre"}
-                </div>
-                <div className="text-md font-semibold text-blue-700">
-                  Score: {rec.score || 0}
+                <div className="flex-1">
+                  <div
+                    className="text-xl font-bold text-gray-800 truncate mb-2 group-hover:text-purple-600 transition-colors duration-200"
+                    style={{
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {rec.track?.title || "Unknown Title"}
+                  </div>
+                  <div className="text-sm text-gray-600 mb-1">
+                    <span className="font-medium">Artist:</span> {rec.track?.artist || "Unknown Artist"}
+                  </div>
+                  <div className="text-sm text-gray-600 mb-3">
+                    <span className="font-medium">Genre:</span> {rec.track?.genre || "Unknown Genre"}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold text-purple-600 bg-purple-50 px-3 py-1 rounded-full">
+                      Score: {rec.score || 0}
+                    </div>
+                  </div>
                 </div>
                 <button
                   onClick={() => {
                     console.log("Selected Track ID:", rec.track?.id);
                     setSelectedTrackId(rec.track?.id);
                   }}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                  className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 font-medium transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   Play Track
                 </button>
@@ -457,7 +444,7 @@ export default function Home() {
                 icon="🎯"
                 title="No recommendations yet"
                 description="Get personalized recommendations by adding tracks and clicking 'Get Recommendations'"
-                className="py-12"
+                className="py-16"
               />
             </div>
           )}
