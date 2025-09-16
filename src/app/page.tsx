@@ -382,7 +382,7 @@ export default function Home() {
               style={{ borderRadius: "12px" }}
               src={`https://open.spotify.com/embed/track/${selectedTrackId}?autoplay=true`}
               width="100%"
-              height="400"
+              height="200"
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
               loading="lazy"
             ></iframe>
@@ -393,70 +393,63 @@ export default function Home() {
               description="Select a track to play it here"
             />
           )}
-        </div>
-      </div>
-
-
-      {/* Recommendations */}
-      <div className="mt-8">
-        <h2 className="text-3xl font-bold mb-6 text-gray-900 text-center">
-          <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Recommendations</span>
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loading ? (
-            Array.from({ length: 6 }).map((_, index) => (
-              <RecommendationSkeleton key={index} />
-            ))
-          ) : recommendations.length > 0 ? (
-            recommendations.map((rec: Recommendation) => (
-              <div
-                key={rec.track?.id || Math.random()}
-                className="p-6 bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 flex flex-col space-y-4 group"
-              >
-                <div className="flex-1">
+          
+          {/* Recommendations */}
+          <div className="mt-6">
+            <h3 className="text-xl font-bold mb-4 text-gray-900 text-center">
+              <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Recommendations</span>
+            </h3>
+            <div className="grid grid-cols-1 gap-3 max-h-64 overflow-y-auto">
+              {loading ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                  <RecommendationSkeleton key={index} />
+                ))
+              ) : recommendations.length > 0 ? (
+                recommendations.map((rec: Recommendation) => (
                   <div
-                    className="text-xl font-bold text-gray-800 truncate mb-2 group-hover:text-purple-600 transition-colors duration-200"
-                    style={{
-                      overflow: "hidden",
-                      whiteSpace: "nowrap",
-                      textOverflow: "ellipsis",
-                    }}
+                    key={rec.track?.id || Math.random()}
+                    className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:shadow-md transition-all duration-200 flex items-center justify-between group"
                   >
-                    {rec.track?.title || "Unknown Title"}
-                  </div>
-                  <div className="text-sm text-gray-600 mb-1">
-                    <span className="font-medium">Artist:</span> {rec.track?.artist || "Unknown Artist"}
-                  </div>
-                  <div className="text-sm text-gray-600 mb-3">
-                    <span className="font-medium">Genre:</span> {rec.track?.genre || "Unknown Genre"}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-semibold text-purple-600 bg-purple-50 px-3 py-1 rounded-full">
-                      Score: {rec.score || 0}
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className="font-semibold text-gray-800 truncate group-hover:text-purple-600 transition-colors duration-200"
+                        style={{
+                          overflow: "hidden",
+                          whiteSpace: "nowrap",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {rec.track?.title || "Unknown Title"}
+                      </div>
+                      <div className="text-sm text-gray-600 truncate">
+                        {rec.track?.artist || "Unknown Artist"}
+                      </div>
+                      <div className="text-xs text-purple-600 font-medium">
+                        Score: {rec.score || 0}
+                      </div>
                     </div>
+                    <button
+                      onClick={() => {
+                        console.log("Selected Track ID:", rec.track?.id);
+                        setSelectedTrackId(rec.track?.id);
+                      }}
+                      className="ml-3 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm rounded-lg hover:from-green-600 hover:to-emerald-700 font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                      Play
+                    </button>
                   </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <EmptyState
+                    icon="🎯"
+                    title="No recommendations yet"
+                    description="Get personalized recommendations by adding tracks and clicking 'Get Recommendations'"
+                  />
                 </div>
-                <button
-                  onClick={() => {
-                    console.log("Selected Track ID:", rec.track?.id);
-                    setSelectedTrackId(rec.track?.id);
-                  }}
-                  className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 font-medium transition-all duration-200 shadow-md hover:shadow-lg"
-                >
-                  Play Track
-                </button>
-              </div>
-            ))
-          ) : (
-            <div className="col-span-full">
-              <EmptyState
-                icon="🎯"
-                title="No recommendations yet"
-                description="Get personalized recommendations by adding tracks and clicking 'Get Recommendations'"
-                className="py-16"
-              />
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
