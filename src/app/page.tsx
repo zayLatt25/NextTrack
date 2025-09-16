@@ -372,34 +372,37 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Now Playing */}
-        <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
-          <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center flex items-center justify-center">
-            <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Now Playing</span>
-          </h2>
-          {selectedTrackId ? (
-            <iframe
-              style={{ borderRadius: "12px" }}
-              src={`https://open.spotify.com/embed/track/${selectedTrackId}?autoplay=true`}
-              width="100%"
-              height="200"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
-            ></iframe>
-          ) : (
-            <EmptyState
-              icon="🎧"
-              title="No track selected"
-              description="Select a track to play it here"
-            />
-          )}
-          
+        {/* Right Side - Now Playing and Recommendations */}
+        <div className="space-y-6">
+          {/* Now Playing */}
+          <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
+            <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center flex items-center justify-center">
+              <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Now Playing</span>
+            </h2>
+            {selectedTrackId ? (
+              <iframe
+                style={{ borderRadius: "12px" }}
+                src={`https://open.spotify.com/embed/track/${selectedTrackId}?autoplay=true`}
+                width="100%"
+                height="200"
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                loading="lazy"
+              ></iframe>
+            ) : (
+              <EmptyState
+                icon="🎧"
+                title="No track selected"
+                description="Select a track to play it here"
+              />
+            )}
+          </div>
+
           {/* Recommendations */}
-          <div className="mt-6">
-            <h3 className="text-xl font-bold mb-4 text-gray-900 text-center">
+          <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100 min-h-[600px]">
+            <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center flex items-center justify-center">
               <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Recommendations</span>
-            </h3>
-            <div className="grid grid-cols-1 gap-3 max-h-64 overflow-y-auto">
+            </h2>
+            <div className="grid grid-cols-1 gap-3 max-h-[500px] overflow-y-auto">
               {loading ? (
                 Array.from({ length: 3 }).map((_, index) => (
                   <RecommendationSkeleton key={index} />
