@@ -1,5 +1,57 @@
 const SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1";
 
+// Spotify API response types
+interface SpotifyTrack {
+  id: string;
+  name: string;
+  artists: Array<{ id: string; name: string }>;
+  album: { 
+    id: string; 
+    name: string; 
+    images: Array<{ url: string; width: number; height: number }> 
+  };
+  popularity: number;
+  external_urls: { spotify: string };
+  preview_url: string | null;
+  duration_ms: number;
+}
+
+interface SpotifySearchResponse {
+  tracks: {
+    items: SpotifyTrack[];
+    total: number;
+    limit: number;
+    offset: number;
+  };
+}
+
+interface SpotifyArtist {
+  id: string;
+  name: string;
+  genres: string[];
+  popularity: number;
+  followers: { total: number };
+  external_urls: { spotify: string };
+  images: Array<{ url: string; width: number; height: number }>;
+}
+
+interface SpotifyAudioFeatures {
+  id: string;
+  danceability: number;
+  energy: number;
+  key: number;
+  loudness: number;
+  mode: number;
+  speechiness: number;
+  acousticness: number;
+  instrumentalness: number;
+  liveness: number;
+  valence: number;
+  tempo: number;
+  duration_ms: number;
+  time_signature: number;
+}
+
 export async function getSpotifyAccessToken(
   clientId: string,
   clientSecret: string
@@ -24,7 +76,7 @@ export async function getSpotifyAccessToken(
 export async function fetchSpotifyTracks(
   accessToken: string,
   query: string
-): Promise<any[]> {
+): Promise<SpotifyTrack[]> {
   const queryParams = new URLSearchParams({
     q: query,
     type: "track",
@@ -44,14 +96,14 @@ export async function fetchSpotifyTracks(
     throw new Error(`Failed to fetch tracks: ${response.statusText}`);
   }
 
-  const data = await response.json();
+  const data: SpotifySearchResponse = await response.json();
   return data.tracks.items;
 }
 
 export async function fetchArtistMetadata(
   accessToken: string,
   artistId: string
-): Promise<any> {
+): Promise<SpotifyArtist | null> {
   const response = await fetch(`${SPOTIFY_API_BASE_URL}/artists/${artistId}`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -63,14 +115,14 @@ export async function fetchArtistMetadata(
     return null;
   }
 
-  const data = await response.json();
+  const data: SpotifyArtist = await response.json();
   return data; // Return artist metadata, including genres
 }
 
 export async function fetchAudioFeatures(
   accessToken: string,
   trackId: string
-): Promise<any> {
+): Promise<SpotifyAudioFeatures | null> {
   console.log("Fetching audio features for track ID:", trackId);
 
   const response = await fetch(
@@ -89,6 +141,6 @@ export async function fetchAudioFeatures(
     return null;
   }
 
-  const data = await response.json();
+  const data: SpotifyAudioFeatures = await response.json();
   return data; // Return audio features, including valence and energy
 }

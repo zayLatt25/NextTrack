@@ -19,11 +19,15 @@ type SpotifyTrack = {
   id: string;
   name: string;
   artists: Array<{ id: string; name: string }>;
-  popularity: number;
-  album: {
-    name: string;
-    release_date: string;
+  album: { 
+    id: string; 
+    name: string; 
+    images: Array<{ url: string; width: number; height: number }> 
   };
+  popularity: number;
+  external_urls: { spotify: string };
+  preview_url: string | null;
+  duration_ms: number;
 };
 
 type UserPreferences = {
@@ -458,9 +462,7 @@ export async function POST(req: Request) {
               extractedGenres[0] ||
               "Unknown Genre",
             popularity: track.popularity,
-            releaseYear: track.album?.release_date
-              ? new Date(track.album.release_date).getFullYear()
-              : undefined,
+            releaseYear: undefined, // Release date not available in search results
             album: track.album?.name,
           };
 
@@ -480,9 +482,7 @@ export async function POST(req: Request) {
             artist: track.artists[0]?.name || "Unknown Artist",
             genre: "Unknown Genre",
             popularity: track.popularity,
-            releaseYear: track.album?.release_date
-              ? new Date(track.album.release_date).getFullYear()
-              : undefined,
+            releaseYear: undefined, // Release date not available in search results
             album: track.album?.name,
           };
 
